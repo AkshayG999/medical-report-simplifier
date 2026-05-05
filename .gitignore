@@ -10,3 +10,5 @@ coverage/
 *.db-journal
 *.db-shm
 *.db-wal
+firebase-key*.json
+*-service-account*.json

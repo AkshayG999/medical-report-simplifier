@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { chromium } from 'playwright';
-import { initializeDatabase, saveReport, updateReportAnalysis, getAllReports, getReportById, deleteReport, getDatabasePath } from './db.js';
+import { initializeDatabase, saveReport, updateReportAnalysis, getAllReports, getReportById, deleteReport } from './db.js';
 import { buildReportSummaryPdfHtml, ingestReportSummaryContent } from '../src/lib/pdfExport.ts';
 
 const app = express();
@@ -12,16 +12,13 @@ const VALID_STATUSES = new Set(['pending', 'processing', 'completed', 'failed'])
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Initialize database
-initializeDatabase();
-
 // API Routes
 
 // Save initial report (before AI processing)
-app.post('/api/reports', (req, res) => {
+app.post('/api/reports', async (req, res) => {
   try {
     const { fileName, fileSize, mimeType, language, fileData } = req.body;
-    
+
     if (typeof fileName !== 'string' || fileName.trim() === '') {
       return res.status(400).json({ success: false, error: 'fileName is required' });
     }
@@ -34,7 +31,7 @@ app.post('/api/reports', (req, res) => {
       return res.status(400).json({ success: false, error: 'mimeType is required' });
     }
 
-    const reportId = saveReport({
+    const reportId = await saveReport({
       fileName: fileName.trim(),
       fileSize,
       mimeType: mimeType.trim(),
@@ -43,8 +40,8 @@ app.post('/api/reports', (req, res) => {
       status: 'pending'
     });
 
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       reportId,
       message: 'Report saved successfully',
       status: 'pending'
@@ -56,10 +53,10 @@ app.post('/api/reports', (req, res) => {
 });
 
 // Update report with AI analysis results
-app.put('/api/reports/:id/analysis', (req, res) => {
+app.put('/api/reports/:id/analysis', async (req, res) => {
   try {
     const { status, rawExtraction, simplifiedReport, recommendations, insights, resources, errorMessage } = req.body;
-    
+
     if (!status) {
       return res.status(400).json({ success: false, error: 'Status is required' });
     }
@@ -68,7 +65,7 @@ app.put('/api/reports/:id/analysis', (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid report status' });
     }
 
-    const success = updateReportAnalysis(req.params.id, {
+    const success = await updateReportAnalysis(req.params.id, {
       status,
       rawExtraction,
       simplifiedReport,
@@ -82,8 +79,8 @@ app.put('/api/reports/:id/analysis', (req, res) => {
       return res.status(404).json({ success: false, error: 'Report not found' });
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Report analysis updated successfully',
       status
     });
@@ -160,9 +157,9 @@ app.post('/api/reports/export-summary-pdf', async (req, res) => {
 });
 
 // Get all reports
-app.get('/api/reports', (req, res) => {
+app.get('/api/reports', async (req, res) => {
   try {
-    const reports = getAllReports();
+    const reports = await getAllReports();
     res.json({ success: true, reports });
   } catch (error) {
     console.error('Error fetching reports:', error);
@@ -171,9 +168,9 @@ app.get('/api/reports', (req, res) => {
 });
 
 // Get a specific report by ID
-app.get('/api/reports/:id', (req, res) => {
+app.get('/api/reports/:id', async (req, res) => {
   try {
-    const report = getReportById(req.params.id);
+    const report = await getReportById(req.params.id);
     if (!report) {
       return res.status(404).json({ success: false, error: 'Report not found' });
     }
@@ -185,9 +182,9 @@ app.get('/api/reports/:id', (req, res) => {
 });
 
 // Delete a report by ID
-app.delete('/api/reports/:id', (req, res) => {
+app.delete('/api/reports/:id', async (req, res) => {
   try {
-    const success = deleteReport(req.params.id);
+    const success = await deleteReport(req.params.id);
     if (!success) {
       return res.status(404).json({ success: false, error: 'Report not found' });
     }
@@ -204,10 +201,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`📊 Database initialized at: ${getDatabasePath()}`);
+// Initialize Firebase and start server
+async function start() {
+  await initializeDatabase();
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on http://localhost:${PORT}`);
+    console.log(`🔥 Using Firebase Firestore for data storage`);
+  });
+}
+
+start().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
 
 export default app;
