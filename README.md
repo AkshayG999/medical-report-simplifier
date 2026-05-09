@@ -14,10 +14,22 @@ MedInsight AI is an AI-powered medical report analyzer that simplifies complex l
 ## Tech Stack
 
 - **Frontend**: React, Tailwind CSS, Framer Motion
+- **Account & Storage**: Firebase Auth, Firestore, Firebase Storage
+- **Backend**: Express.js with Firebase Admin SDK
 - **AI Orchestration**: LangChain, LangGraph
 - **LLM**: Gemini 3 Flash (via @google/genai)
 - **Icons**: Lucide React
 - **Formatting**: React Markdown
+
+## Firebase Setup
+
+Enable Google sign-in in Firebase Authentication, create Firestore and Storage for the configured project, and deploy the included rules:
+
+```bash
+firebase deploy --only firestore:rules,storage
+```
+
+For local backend development, keep the service account JSON outside source control and point `FIREBASE_SERVICE_ACCOUNT_PATH` to it in `.env`. In managed Google Cloud runtimes, leave that value empty and use Application Default Credentials.
 
 ## Application Screens
 

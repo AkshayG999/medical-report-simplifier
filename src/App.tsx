@@ -6,18 +6,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, ChevronDown, FileText, Loader2, RefreshCcw } from "lucide-react";
-import { reportProcessor } from "@/src/lib/reportGraph";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { Activity, FileText, LogOut, Loader2, RefreshCcw } from "lucide-react";
+import { auth, createPasswordAccount, signInWithGoogle, signInWithPassword, signOutUser } from "@/src/lib/firebase";
 import {
+  analyzeReport,
   downloadReportSummaryPdf,
   getAllReports,
   getReportById,
   saveReport as saveReportToAPI,
   SavedReport,
-  updateReportAnalysis,
   deleteReport,
 } from "@/src/lib/api";
 import { ProcessingPage } from "@/src/pages/ProcessingPage";
+import { LoginPage } from "@/src/pages/LoginPage";
 import { ReportResultPage } from "@/src/pages/ReportResultPage";
 import { ReportsPage } from "@/src/pages/ReportsPage";
 import { SavedReportPage } from "@/src/pages/SavedReportPage";
@@ -40,6 +42,29 @@ const languages: LanguageOption[] = [
   { name: "Assamese", native: "অসমীয়া", flag: "🇮🇳" },
 ];
 
+function getAuthErrorMessage(err: unknown): string {
+  const code = typeof err === "object" && err !== null && "code" in err
+    ? String((err as { code?: unknown }).code)
+    : "";
+
+  switch (code) {
+    case "auth/operation-not-allowed":
+      return "Email/password sign-in is disabled in Firebase Console. Enable Authentication > Sign-in method > Email/Password.";
+    case "auth/email-already-in-use":
+      return "This account already exists. Switch to Sign in and use the same email/mobile and password.";
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "Invalid email/mobile or password.";
+    case "auth/weak-password":
+      return "Use a stronger password with at least 6 characters.";
+    case "auth/popup-closed-by-user":
+      return "Google sign-in was closed before it finished.";
+    default:
+      return err instanceof Error ? err.message : "Authentication failed. Please try again.";
+  }
+}
+
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,6 +77,11 @@ export default function App() {
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [googleSigningIn, setGoogleSigningIn] = useState(false);
+  const [passwordSigningIn, setPasswordSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const isUploadRoute = location.pathname === "/";
   const showNewAnalysis = location.pathname === "/result" || location.pathname.startsWith("/reports");
@@ -61,8 +91,85 @@ export default function App() {
       "relative px-1 pb-1 transition-colors after:absolute after:left-0 after:right-0 after:bottom-0 after:h-0.5 after:rounded-full after:transition-all",
       active
         ? "text-primary-600 after:bg-primary-400 after:opacity-100"
-        : "text-cocoa hover:text-primary-400 after:bg-transparent after:opacity-0",
+      : "text-cocoa hover:text-primary-400 after:bg-transparent after:opacity-0",
     ].join(" ");
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser);
+      setAuthLoading(false);
+      setAuthError(null);
+
+      if (!nextUser) {
+        setReports([]);
+        setResult(null);
+      }
+    });
+  }, []);
+
+  const getUserInitials = (currentUser: User) => {
+    const name = currentUser.displayName || currentUser.email || "User";
+    const initials = name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("");
+
+    return initials || "U";
+  };
+
+  const handleSignIn = async () => {
+    setGoogleSigningIn(true);
+    setAuthError(null);
+
+    try {
+      await signInWithGoogle();
+      navigate("/", { replace: true });
+    } catch (err) {
+      setAuthError(getAuthErrorMessage(err));
+    } finally {
+      setGoogleSigningIn(false);
+    }
+  };
+
+  const handlePasswordSignIn = async (identifier: string, password: string) => {
+    setPasswordSigningIn(true);
+    setAuthError(null);
+
+    try {
+      await signInWithPassword(identifier, password);
+      navigate("/", { replace: true });
+    } catch (err) {
+      const message = getAuthErrorMessage(err);
+      setAuthError(message);
+      throw new Error(message);
+    } finally {
+      setPasswordSigningIn(false);
+    }
+  };
+
+  const handlePasswordSignUp = async (identifier: string, password: string, displayName: string) => {
+    setPasswordSigningIn(true);
+    setAuthError(null);
+
+    try {
+      await createPasswordAccount(identifier, password, displayName);
+      navigate("/", { replace: true });
+    } catch (err) {
+      const message = getAuthErrorMessage(err);
+      setAuthError(message);
+      throw new Error(message);
+    } finally {
+      setPasswordSigningIn(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setAuthError(null);
+    await signOutUser();
+    navigate("/");
+  };
 
   const fileToBase64 = (fileToRead: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -75,6 +182,10 @@ export default function App() {
 
   const processReport = async () => {
     if (files.length === 0) return;
+    if (!user) {
+      setError("Please sign in with your account before analyzing a report.");
+      return;
+    }
 
     setLoading(true);
     navigate("/processing");
@@ -83,6 +194,15 @@ export default function App() {
     let reportId: string | null = null;
 
     try {
+      const reportFiles = await Promise.all(
+        files.map(async (selectedFile) => ({
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          mimeType: selectedFile.type,
+          data: await fileToBase64(selectedFile),
+        }))
+      );
+
       try {
         const totalFileSize = files.reduce((total, selectedFile) => total + selectedFile.size, 0);
         const fileName = files.length === 1
@@ -95,84 +215,32 @@ export default function App() {
           fileSize: totalFileSize,
           mimeType,
           language,
+          files: reportFiles,
         });
         reportId = saveResponse.reportId;
-      } catch {
-        throw new Error("Could not connect to the report database API. Please start the backend server and try again.");
+      } catch (saveError) {
+        throw new Error(
+          saveError instanceof Error
+            ? saveError.message
+            : "Could not connect to the secure report database API. Please sign in and make sure the backend server is running."
+        );
       }
 
-      const reportFiles = await Promise.all(
-        files.map(async (selectedFile) => ({
-          fileName: selectedFile.name,
-          mimeType: selectedFile.type,
-          data: await fileToBase64(selectedFile),
-        }))
-      );
-
-      if (reportId) {
-        await updateReportAnalysis(reportId, { status: "processing" });
-      }
-
-      const stream = await reportProcessor.stream({
-        fileData: reportFiles[0]?.data,
-        mimeType: reportFiles[0]?.mimeType,
+      setProcessingStatus("Analyzing report securely...");
+      const analysisResponse = await analyzeReport(reportId, {
         files: reportFiles,
         language,
-      }, { streamMode: "updates" });
+      });
 
-      let currentResult: ReportResult = {};
-      let rawExtraction = "";
-
-      for await (const chunk of stream) {
-        const nodeName = Object.keys(chunk)[0];
-        const data = chunk[nodeName];
-
-        if (nodeName === "extract") {
-          rawExtraction = data.rawExtraction;
-          setProcessingStatus("Simplifying medical terms...");
-        } else if (nodeName === "simplify") {
-          currentResult = { ...currentResult, simplifiedReport: data.simplifiedReport };
-          setResult(currentResult);
-          navigate("/result");
-          setProcessingStatus("Generating recommendations...");
-        } else if (nodeName === "recommend") {
-          currentResult = {
-            ...currentResult,
-            recommendations: data.recommendations,
-            insights: data.insights,
-            resources: data.resources,
-          };
-          setResult(currentResult);
-          setProcessingStatus("");
-        }
-      }
-
-      if (reportId) {
-        try {
-          await updateReportAnalysis(reportId, {
-            status: "completed",
-            rawExtraction,
-            simplifiedReport: currentResult.simplifiedReport,
-            recommendations: currentResult.recommendations,
-            insights: currentResult.insights,
-            resources: currentResult.resources,
-          });
-        } catch (updateError) {
-          console.error("Failed to update report analysis:", updateError);
-        }
-      }
+      setResult({
+        simplifiedReport: analysisResponse.result.simplifiedReport,
+        recommendations: analysisResponse.result.recommendations,
+        insights: analysisResponse.result.insights,
+        resources: analysisResponse.result.resources,
+      });
+      setProcessingStatus("");
+      navigate("/result");
     } catch (err) {
-      if (reportId) {
-        try {
-          await updateReportAnalysis(reportId, {
-            status: "failed",
-            errorMessage: err instanceof Error ? err.message : "Unknown error occurred",
-          });
-        } catch (updateError) {
-          console.error("Failed to update error status:", updateError);
-        }
-      }
-
       setError(err instanceof Error ? err.message : "Failed to process the report. Please ensure the file is clear and try again.");
       navigate("/");
     } finally {
@@ -188,6 +256,14 @@ export default function App() {
   };
 
   const loadReports = useCallback(async (shouldNavigate = true) => {
+    if (!user) {
+      setError("Please sign in to view your saved reports.");
+      if (shouldNavigate) {
+        navigate("/");
+      }
+      return;
+    }
+
     setHistoryLoading(true);
     setError(null);
 
@@ -202,7 +278,7 @@ export default function App() {
     } finally {
       setHistoryLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   useEffect(() => {
     if (location.pathname === "/reports") {
@@ -211,6 +287,11 @@ export default function App() {
   }, [loadReports, location.pathname]);
 
   const loadSavedReport = useCallback(async (reportId: string) => {
+    if (!user) {
+      setError("Please sign in to open saved reports.");
+      return;
+    }
+
     setHistoryLoading(true);
     setError(null);
 
@@ -218,10 +299,14 @@ export default function App() {
       const response = await getReportById(reportId);
       const report = response.report;
       setResult({
+        reportId: report.id,
         simplifiedReport: report.simplifiedReport,
         recommendations: report.recommendations,
         insights: report.insights,
         resources: report.resources,
+        uploadedFiles: report.files,
+        fileStorageStatus: report.fileStorageStatus,
+        fileStorageError: report.fileStorageError,
       });
       setLanguage(report.language);
     } catch (err) {
@@ -229,9 +314,14 @@ export default function App() {
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const handleDeleteReport = async (reportId: string) => {
+    if (!user) {
+      setError("Please sign in to delete saved reports.");
+      return;
+    }
+
     try {
       await deleteReport(reportId);
       void loadReports(false);
@@ -270,6 +360,34 @@ export default function App() {
       setPdfExporting(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg text-primary-600">
+        <Loader2 size={28} className="animate-spin" />
+      </div>
+    );
+  }
+
+  const authRoute = (
+    <LoginPage
+      googleLoading={googleSigningIn}
+      passwordLoading={passwordSigningIn}
+      error={authError}
+      onGoogleSignIn={handleSignIn}
+      onPasswordSignIn={handlePasswordSignIn}
+      onPasswordSignUp={handlePasswordSignUp}
+    />
+  );
+
+  if (!user) {
+    return (
+      <Routes location={location} key={location.pathname}>
+        <Route path="/auth" element={authRoute} />
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="min-h-screen text-ink font-sans selection:bg-accent-100 selection:text-accent-900">
@@ -316,11 +434,16 @@ export default function App() {
                 </motion.button>
               )}
             </AnimatePresence>
-            <button type="button" className="hidden sm:flex items-center gap-2 text-sm font-bold text-ink">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-400 text-sm font-black text-primary-50 shadow-sm shadow-primary-100">
-                AK
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-2 rounded-lg border border-primary-100 bg-white px-2 py-1.5 text-sm font-bold text-ink shadow-sm transition-colors hover:bg-primary-50"
+              title="Sign out"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-400 text-xs font-black text-primary-50 shadow-sm shadow-primary-100">
+                {getUserInitials(user)}
               </span>
-              <ChevronDown size={16} className="text-cocoa" />
+              <LogOut size={15} className="text-cocoa" />
             </button>
           </div>
         </div>
@@ -329,15 +452,18 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-6 py-6 relative z-10">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
+            <Route path="/auth" element={<Navigate to="/" replace />} />
             <Route
               path="/"
               element={
                 <UploadPage
                   files={files}
                   loading={loading}
-                  error={error}
+                  error={error || authError}
                   language={language}
                   languages={languages}
+                  authenticated={Boolean(user)}
+                  authLoading={authLoading}
                   onFilesSelected={(selectedFiles) => {
                     setFiles(selectedFiles);
                     setError(null);

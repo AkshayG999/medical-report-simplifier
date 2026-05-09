@@ -28,6 +28,8 @@ interface UploadPageProps {
   error: string | null;
   language: string;
   languages: LanguageOption[];
+  authenticated: boolean;
+  authLoading: boolean;
   onFilesSelected: (files: File[]) => void;
   onLanguageChange: (language: string) => void;
   onProcessReport: () => void;
@@ -238,6 +240,8 @@ export function UploadPage({
   error,
   language,
   languages,
+  authenticated,
+  authLoading,
   onFilesSelected,
   onLanguageChange,
   onProcessReport,
@@ -278,6 +282,7 @@ export function UploadPage({
   const totalFileSize = files.reduce((total, file) => total + file.size, 0);
   const hasPdf = files.some(isPdfFile);
   const canAddMoreFiles = !hasPdf && files.length < MAX_REPORT_FILES;
+  const canStartAnalysis = files.length > 0 && !loading && authenticated && !authLoading;
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
@@ -426,16 +431,16 @@ export function UploadPage({
 
                 <button
                   type="button"
-                  disabled={files.length === 0 || loading}
+                  disabled={!canStartAnalysis}
                   onClick={onProcessReport}
                   className={cn(
                     "h-12 w-full rounded-md text-base font-extrabold transition-all flex items-center justify-center gap-3 border",
-                    files.length === 0 || loading
+                    !canStartAnalysis
                       ? "border-primary-100 bg-primary-50 text-primary-100 cursor-not-allowed"
                       : "border-primary-400 bg-primary-400 text-primary-50 hover:bg-primary-600 shadow-sm shadow-primary-100"
                   )}
                 >
-                  {loading ? "Starting analysis..." : "Start Analysis"}
+                  {loading ? "Starting analysis..." : authenticated ? "Start Analysis" : "Sign in to Start Analysis"}
                   <ArrowRight size={20} />
                 </button>
 

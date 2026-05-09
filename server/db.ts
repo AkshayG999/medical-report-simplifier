@@ -1,16 +1,41 @@
 import crypto from 'crypto';
-import { db } from './firebase.js';
+import { db, getStorageBucket, storageBucketNames } from './firebase.js';
 
 const REPORTS_COLLECTION = 'reports';
+const REQUIRE_FIREBASE_STORAGE = process.env.REQUIRE_FIREBASE_STORAGE === 'true';
+
+export interface ReportFileUpload {
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  data: string;
+}
+
+export interface StoredReportFile {
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  storagePath: string;
+  bucket: string;
+}
+
+export interface ReportFileDownload {
+  fileName: string;
+  mimeType: string;
+  data: Buffer;
+}
 
 export interface ReportRecord {
   id?: string;
+  userId: string;
   fileName: string;
   fileSize: number;
   mimeType: string;
   language: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  fileData?: string; // Base64 encoded file for processing
+  files?: StoredReportFile[];
+  fileStorageStatus?: 'stored' | 'skipped' | 'failed';
+  fileStorageError?: string;
   rawExtraction?: string;
   simplifiedReport?: string;
   recommendations?: string | null;
@@ -19,6 +44,84 @@ export interface ReportRecord {
   errorMessage?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+function sanitizeFileName(fileName: string): string {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'report-file';
+}
+
+function decodeBase64File(data: string): Buffer {
+  const base64 = data.includes(',') ? data.split(',').pop() || '' : data;
+  return Buffer.from(base64, 'base64');
+}
+
+function isMissingBucketError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && (error as { code?: unknown }).code === 404;
+}
+
+function isMissingStorageBucketSetup(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith('Firebase Storage bucket not found.');
+}
+
+async function saveFileToAvailableBucket(
+  storagePath: string,
+  file: ReportFileUpload,
+  reportId: string,
+  userId: string
+): Promise<string> {
+  let lastError: unknown;
+
+  for (const bucketName of storageBucketNames) {
+    const bucket = getStorageBucket(bucketName);
+    const storageFile = bucket.file(storagePath);
+
+    try {
+      await storageFile.save(decodeBase64File(file.data), {
+        resumable: false,
+        metadata: {
+          contentType: file.mimeType,
+          metadata: {
+            originalName: file.fileName,
+            reportId,
+            userId,
+          },
+        },
+      });
+
+      return bucket.name;
+    } catch (error) {
+      lastError = error;
+      if (!isMissingBucketError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  const bucketList = storageBucketNames.join(', ');
+  throw new Error(
+    `Firebase Storage bucket not found. Tried: ${bucketList}. ` +
+    'Enable Firebase Storage for this project or set FIREBASE_STORAGE_BUCKET to an existing bucket name.'
+  );
+}
+
+async function uploadReportFiles(userId: string, reportId: string, files: ReportFileUpload[]): Promise<StoredReportFile[]> {
+  const storedFiles: StoredReportFile[] = [];
+
+  for (const [index, file] of files.entries()) {
+    const safeFileName = sanitizeFileName(file.fileName);
+    const storagePath = `users/${userId}/reports/${reportId}/${index + 1}-${safeFileName}`;
+    const bucketName = await saveFileToAvailableBucket(storagePath, file, reportId, userId);
+
+    storedFiles.push({
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      mimeType: file.mimeType,
+      storagePath,
+      bucket: bucketName,
+    });
+  }
+
+  return storedFiles;
 }
 
 // Initialize the database (verifies Firestore connectivity)
@@ -35,29 +138,49 @@ export async function initializeDatabase(): Promise<void> {
 
 // Save a new report (initial upload before processing)
 export async function saveReport(report: {
+  userId: string;
   fileName: string;
   fileSize: number;
   mimeType: string;
   language: string;
-  fileData?: string;
+  files?: ReportFileUpload[];
   status?: string;
 }): Promise<string> {
   const id = crypto.randomBytes(16).toString('hex');
   const now = new Date().toISOString();
+  let storedFiles: StoredReportFile[] = [];
+  let fileStorageStatus: ReportRecord['fileStorageStatus'] = report.files?.length ? 'stored' : 'skipped';
+  let fileStorageError: string | undefined;
+
+  if (report.files?.length) {
+    try {
+      storedFiles = await uploadReportFiles(report.userId, id, report.files);
+    } catch (error) {
+      if (!isMissingStorageBucketSetup(error) || REQUIRE_FIREBASE_STORAGE) {
+        throw error;
+      }
+
+      fileStorageStatus = 'skipped';
+      fileStorageError = error instanceof Error ? error.message : 'Firebase Storage is not configured.';
+      console.warn(`Skipping original file storage for report ${id}: ${fileStorageError}`);
+    }
+  }
 
   const doc: Record<string, unknown> = {
+    userId: report.userId,
     fileName: report.fileName,
     fileSize: report.fileSize,
     mimeType: report.mimeType,
     language: report.language,
     status: report.status || 'pending',
+    files: storedFiles,
+    fileStorageStatus,
     createdAt: now,
     updatedAt: now,
   };
 
-  // Only store fileData if provided (it can be very large)
-  if (report.fileData) {
-    doc.fileData = report.fileData;
+  if (fileStorageError) {
+    doc.fileStorageError = fileStorageError;
   }
 
   await db.collection(REPORTS_COLLECTION).doc(id).set(doc);
@@ -65,7 +188,7 @@ export async function saveReport(report: {
 }
 
 // Update report with analysis results
-export async function updateReportAnalysis(id: string, updates: {
+export async function updateReportAnalysis(userId: string, id: string, updates: {
   status?: string;
   rawExtraction?: string;
   simplifiedReport?: string;
@@ -77,7 +200,7 @@ export async function updateReportAnalysis(id: string, updates: {
   const docRef = db.collection(REPORTS_COLLECTION).doc(id);
   const snapshot = await docRef.get();
 
-  if (!snapshot.exists) {
+  if (!snapshot.exists || snapshot.get('userId') !== userId) {
     return false;
   }
 
@@ -98,36 +221,64 @@ export async function updateReportAnalysis(id: string, updates: {
 }
 
 // Get all reports (ordered by creation date, newest first)
-export async function getAllReports(): Promise<ReportRecord[]> {
+export async function getAllReports(userId: string): Promise<ReportRecord[]> {
   const snapshot = await db
     .collection(REPORTS_COLLECTION)
-    .orderBy('createdAt', 'desc')
+    .where('userId', '==', userId)
     .get();
 
   return snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
-  })) as ReportRecord[];
+  } as ReportRecord)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 }
 
 // Get a report by ID
-export async function getReportById(id: string): Promise<ReportRecord | null> {
+export async function getReportById(userId: string, id: string): Promise<ReportRecord | null> {
   const doc = await db.collection(REPORTS_COLLECTION).doc(id).get();
 
-  if (!doc.exists) {
+  if (!doc.exists || doc.get('userId') !== userId) {
     return null;
   }
 
   return { id: doc.id, ...doc.data() } as ReportRecord;
 }
 
+export async function getReportFile(userId: string, id: string, fileIndex: number): Promise<ReportFileDownload | null> {
+  const report = await getReportById(userId, id);
+
+  if (!report?.files || fileIndex < 0 || fileIndex >= report.files.length) {
+    return null;
+  }
+
+  const file = report.files[fileIndex];
+  const [data] = await getStorageBucket(file.bucket).file(file.storagePath).download();
+
+  return {
+    fileName: file.fileName,
+    mimeType: file.mimeType,
+    data,
+  };
+}
+
 // Delete a report by ID
-export async function deleteReport(id: string): Promise<boolean> {
+export async function deleteReport(userId: string, id: string): Promise<boolean> {
   const docRef = db.collection(REPORTS_COLLECTION).doc(id);
   const snapshot = await docRef.get();
 
-  if (!snapshot.exists) {
+  if (!snapshot.exists || snapshot.get('userId') !== userId) {
     return false;
+  }
+
+  const report = snapshot.data() as ReportRecord;
+  if (Array.isArray(report.files)) {
+    await Promise.all(report.files.map(async (file) => {
+      try {
+        await getStorageBucket(file.bucket).file(file.storagePath).delete({ ignoreNotFound: true });
+      } catch (error) {
+        console.error(`Failed to delete stored report file ${file.storagePath}:`, error);
+      }
+    }));
   }
 
   await docRef.delete();

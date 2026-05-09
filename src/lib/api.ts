@@ -1,4 +1,26 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+import { auth } from './firebase';
+import type { UploadedReportFile } from '@/src/types/report';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+
+async function getAuthHeaders(existingHeaders?: HeadersInit): Promise<Headers> {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error('Please sign in to access saved reports.');
+  }
+
+  const headers = new Headers(existingHeaders);
+  headers.set('Authorization', `Bearer ${await user.getIdToken()}`);
+  return headers;
+}
+
+async function authenticatedFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  return fetch(input, {
+    ...init,
+    headers: await getAuthHeaders(init.headers),
+  });
+}
 
 async function parseAPIResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
   const payload = await response.json().catch(() => null);
@@ -16,7 +38,12 @@ export interface ReportData {
   fileSize: number;
   mimeType: string;
   language: string;
-  fileData?: string;
+  files?: {
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    data: string;
+  }[];
 }
 
 export interface ReportAnalysisData {
@@ -27,6 +54,16 @@ export interface ReportAnalysisData {
   insights?: string;
   resources?: { title: string; url: string }[];
   errorMessage?: string;
+}
+
+export interface AnalyzeReportData {
+  language: string;
+  files: {
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    data: string;
+  }[];
 }
 
 export interface ReportSummaryPdfData {
@@ -42,6 +79,9 @@ export interface SavedReport {
   fileSize: number;
   mimeType: string;
   language: string;
+  files?: UploadedReportFile[];
+  fileStorageStatus?: 'stored' | 'skipped' | 'failed';
+  fileStorageError?: string;
   rawExtraction?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   simplifiedReport?: string;
@@ -60,7 +100,7 @@ interface SavedReportAPIResponse extends Omit<SavedReport, 'recommendations' | '
 
 // Save initial report to the database (before AI processing)
 export async function saveReport(data: ReportData): Promise<{ success: boolean; reportId: string }> {
-  const response = await fetch(`${API_BASE_URL}/reports`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/reports`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -73,7 +113,7 @@ export async function saveReport(data: ReportData): Promise<{ success: boolean; 
 
 // Update report with AI analysis results
 export async function updateReportAnalysis(reportId: string, data: ReportAnalysisData): Promise<{ success: boolean }> {
-  const response = await fetch(`${API_BASE_URL}/reports/${reportId}/analysis`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/reports/${reportId}/analysis`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -84,8 +124,30 @@ export async function updateReportAnalysis(reportId: string, data: ReportAnalysi
   return parseAPIResponse(response, 'Failed to update report analysis');
 }
 
+export async function analyzeReport(reportId: string, data: AnalyzeReportData): Promise<{
+  success: boolean;
+  result: {
+    rawExtraction: string;
+    simplifiedReport: string;
+    recommendations: string[];
+    insights: string;
+    resources: { title: string; url: string }[];
+  };
+}> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/reports/${reportId}/analyze`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  return parseAPIResponse(response, 'Failed to analyze report');
+}
+
+
 export async function downloadReportSummaryPdf(data: ReportSummaryPdfData): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}/reports/export-summary-pdf`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/reports/export-summary-pdf`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -153,7 +215,7 @@ function parseSavedReport(report: SavedReportAPIResponse): SavedReport {
 
 // Get all reports from the database
 export async function getAllReports(): Promise<{ success: boolean; reports: SavedReport[] }> {
-  const response = await fetch(`${API_BASE_URL}/reports`);
+  const response = await authenticatedFetch(`${API_BASE_URL}/reports`);
   const payload = await parseAPIResponse<{ success: boolean; reports: SavedReportAPIResponse[] }>(
     response,
     'Failed to fetch reports'
@@ -167,7 +229,7 @@ export async function getAllReports(): Promise<{ success: boolean; reports: Save
 
 // Get a specific report by ID
 export async function getReportById(id: string): Promise<{ success: boolean; report: SavedReport }> {
-  const response = await fetch(`${API_BASE_URL}/reports/${id}`);
+  const response = await authenticatedFetch(`${API_BASE_URL}/reports/${id}`);
   const payload = await parseAPIResponse<{ success: boolean; report: SavedReportAPIResponse }>(
     response,
     'Failed to fetch report'
@@ -179,9 +241,27 @@ export async function getReportById(id: string): Promise<{ success: boolean; rep
   };
 }
 
+export async function downloadUploadedReportFile(reportId: string, fileIndex: number): Promise<Blob> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/reports/${reportId}/files/${fileIndex}`, {
+    headers: {
+      'Accept': 'application/pdf,image/*,*/*',
+    },
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    const message = payload && typeof payload.error === 'string'
+      ? payload.error
+      : 'Failed to fetch uploaded file';
+    throw new Error(message);
+  }
+
+  return response.blob();
+}
+
 // Delete a report by ID
 export async function deleteReport(id: string): Promise<{ success: boolean; message: string }> {
-  const response = await fetch(`${API_BASE_URL}/reports/${id}`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/reports/${id}`, {
     method: 'DELETE',
   });
   
