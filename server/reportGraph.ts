@@ -2,6 +2,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { Annotation } from "@langchain/langgraph";
 import { z } from "zod";
+import { logger } from "./logger.js";
 
 interface ReportFileInput {
   fileName: string;
@@ -135,7 +136,7 @@ const recommendNode = async (state: ReportStateType) => {
     const response = await structuredModel.invoke(prompt);
     lines = response.recommendations;
   } catch (e) {
-    console.error("Failed to generate structured recommendations:", e);
+    logger.warn("analysis.recommendations_structured_output_failed", { error: e });
     // Fallback if structured output fails
     lines = ["An error occurred while generating recommendations."];
   }
@@ -161,7 +162,7 @@ const recommendNode = async (state: ReportStateType) => {
       resources = JSON.parse(jsonMatch[0]);
     }
   } catch (e) {
-    console.error("Failed to parse resources JSON:", e);
+    logger.warn("analysis.resources_parse_failed", { error: e });
   }
 
   return { 

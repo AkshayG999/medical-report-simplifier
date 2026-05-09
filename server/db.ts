@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { db, getStorageBucket, storageBucketNames } from './firebase.js';
+import { logger } from './logger.js';
 
 const REPORTS_COLLECTION = 'reports';
 const REQUIRE_FIREBASE_STORAGE = process.env.REQUIRE_FIREBASE_STORAGE === 'true';
@@ -76,6 +77,15 @@ async function saveFileToAvailableBucket(
     const storageFile = bucket.file(storagePath);
 
     try {
+      logger.info('storage.upload.started', {
+        reportId,
+        userId,
+        bucket: bucket.name,
+        storagePath,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+      });
+
       await storageFile.save(decodeBase64File(file.data), {
         resumable: false,
         metadata: {
@@ -88,9 +98,24 @@ async function saveFileToAvailableBucket(
         },
       });
 
+      logger.info('storage.upload.completed', {
+        reportId,
+        userId,
+        bucket: bucket.name,
+        storagePath,
+      });
+
       return bucket.name;
     } catch (error) {
       lastError = error;
+      logger.warn('storage.upload.failed', {
+        reportId,
+        userId,
+        bucket: bucket.name,
+        storagePath,
+        missingBucket: isMissingBucketError(error),
+        error,
+      });
       if (!isMissingBucketError(error)) {
         throw error;
       }
@@ -129,9 +154,11 @@ export async function initializeDatabase(): Promise<void> {
   try {
     // A lightweight read to verify Firestore is reachable
     await db.collection(REPORTS_COLLECTION).limit(1).get();
-    console.log('✅ Firebase Firestore initialized successfully');
+    logger.info('database.initialized', {
+      collection: REPORTS_COLLECTION,
+    });
   } catch (error) {
-    console.error('❌ Failed to connect to Firebase Firestore:', error);
+    logger.error('database.initialization_failed', { error });
     throw error;
   }
 }
@@ -162,7 +189,11 @@ export async function saveReport(report: {
 
       fileStorageStatus = 'skipped';
       fileStorageError = error instanceof Error ? error.message : 'Firebase Storage is not configured.';
-      console.warn(`Skipping original file storage for report ${id}: ${fileStorageError}`);
+      logger.warn('storage.upload.skipped', {
+        reportId: id,
+        userId: report.userId,
+        error: fileStorageError,
+      });
     }
   }
 
@@ -184,6 +215,13 @@ export async function saveReport(report: {
   }
 
   await db.collection(REPORTS_COLLECTION).doc(id).set(doc);
+  logger.info('report.created', {
+    reportId: id,
+    userId: report.userId,
+    status: doc.status,
+    fileCount: storedFiles.length,
+    fileStorageStatus,
+  });
   return id;
 }
 
@@ -217,6 +255,12 @@ export async function updateReportAnalysis(userId: string, id: string, updates: 
   if (updates.errorMessage !== undefined) fields.errorMessage = updates.errorMessage;
 
   await docRef.update(fields);
+  logger.info('report.analysis_updated', {
+    reportId: id,
+    userId,
+    status: updates.status,
+    fields: Object.keys(fields).filter((field) => field !== 'updatedAt'),
+  });
   return true;
 }
 
@@ -227,10 +271,17 @@ export async function getAllReports(userId: string): Promise<ReportRecord[]> {
     .where('userId', '==', userId)
     .get();
 
-  return snapshot.docs.map((doc) => ({
+  const reports = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   } as ReportRecord)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+  logger.info('reports.listed', {
+    userId,
+    count: reports.length,
+  });
+
+  return reports;
 }
 
 // Get a report by ID
@@ -240,6 +291,11 @@ export async function getReportById(userId: string, id: string): Promise<ReportR
   if (!doc.exists || doc.get('userId') !== userId) {
     return null;
   }
+
+  logger.info('report.fetched', {
+    reportId: id,
+    userId,
+  });
 
   return { id: doc.id, ...doc.data() } as ReportRecord;
 }
@@ -252,7 +308,21 @@ export async function getReportFile(userId: string, id: string, fileIndex: numbe
   }
 
   const file = report.files[fileIndex];
+  logger.info('storage.download.started', {
+    reportId: id,
+    userId,
+    fileIndex,
+    bucket: file.bucket,
+    storagePath: file.storagePath,
+  });
   const [data] = await getStorageBucket(file.bucket).file(file.storagePath).download();
+
+  logger.info('storage.download.completed', {
+    reportId: id,
+    userId,
+    fileIndex,
+    bytes: data.length,
+  });
 
   return {
     fileName: file.fileName,
@@ -276,16 +346,26 @@ export async function deleteReport(userId: string, id: string): Promise<boolean>
       try {
         await getStorageBucket(file.bucket).file(file.storagePath).delete({ ignoreNotFound: true });
       } catch (error) {
-        console.error(`Failed to delete stored report file ${file.storagePath}:`, error);
+        logger.warn('storage.delete.failed', {
+          reportId: id,
+          userId,
+          storagePath: file.storagePath,
+          error,
+        });
       }
     }));
   }
 
   await docRef.delete();
+  logger.info('report.deleted', {
+    reportId: id,
+    userId,
+    fileCount: report.files?.length || 0,
+  });
   return true;
 }
 
 // Close the database connection (no-op for Firestore — kept for API compat)
 export function closeDatabase(): void {
-  console.log('Firestore does not require explicit connection closure');
+  logger.info('database.close_skipped');
 }

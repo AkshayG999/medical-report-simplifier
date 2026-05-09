@@ -13,6 +13,28 @@ interface ReportsPageProps {
   onDeleteReport: (reportId: string) => void;
 }
 
+function getReportErrorText(report: SavedReport): string {
+  const message = report.errorMessage || "Analysis failed. Please try again.";
+
+  if (/quota|too many requests|429|rate limit/i.test(message)) {
+    return "AI quota reached. Please retry later.";
+  }
+
+  if (/api key|permission|unauthorized|forbidden|billing/i.test(message)) {
+    return "AI service is temporarily unavailable.";
+  }
+
+  if (/timeout|deadline|network|fetch/i.test(message)) {
+    return "Analysis timed out. Please retry.";
+  }
+
+  if (message.length > 140 || message.includes("https://") || message.includes("{")) {
+    return "Analysis failed. Please retry.";
+  }
+
+  return message;
+}
+
 export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onDeleteReport }: ReportsPageProps) {
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
 
@@ -62,10 +84,10 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
           {reports.map((report) => (
             <div
               key={report.id}
-              className="w-full text-left bg-white border border-primary-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-primary-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group relative"
+              className="w-full text-left bg-white border border-primary-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-primary-200 transition-all grid grid-cols-1 gap-4 cursor-pointer group relative sm:grid-cols-[minmax(0,1fr)_auto]"
               onClick={() => onOpenReport(report.id)}
             >
-              <div className="min-w-0 pr-8">
+              <div className="min-w-0">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-400 flex items-center justify-center shrink-0">
                     <FileText size={20} />
@@ -77,9 +99,14 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
                     </p>
                   </div>
                 </div>
-                {report.errorMessage && <p className="text-sm text-rose-600 font-medium">{report.errorMessage}</p>}
+                {report.status === "failed" && (
+                  <div className="mt-3 flex max-w-2xl items-start gap-2 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-rose-700">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    <p className="max-h-10 overflow-hidden text-sm font-semibold leading-5">{getReportErrorText(report)}</p>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center justify-end gap-3 shrink-0">
                 <span className={cn(
                   "px-3 py-1 rounded-full text-xs font-bold border capitalize",
                   report.status === "completed" && "bg-emerald-50 text-emerald-600 border-emerald-100",
