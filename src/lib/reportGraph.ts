@@ -1,6 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { Annotation } from "@langchain/langgraph";
+import { z } from "zod";
 
 interface ReportFileInput {
   fileName: string;
@@ -33,6 +34,7 @@ const getModel = () => {
   return new ChatGoogleGenerativeAI({
     apiKey,
     model: "gemini-3-flash-preview",
+    // model: "gemini-2.5-flash",
     maxOutputTokens: 5048,
   });
 };
@@ -96,6 +98,7 @@ const simplifyNode = async (state: ReportStateType) => {
   3. Highlight what is normal and what might need attention.
   4. Provide a "Key Takeaway" section.
   5. Ensure the tone is empathetic and clear.
+  6. DO NOT include any greetings, introductory messages, or pleasantries (e.g., "Namaste", "Hello [Name]", "Here is a summary of your report", etc.). Start directly with the core summary.
   
   Raw Data:
   ${state.rawExtraction}`;
@@ -109,36 +112,33 @@ const simplifyNode = async (state: ReportStateType) => {
 const recommendNode = async (state: ReportStateType) => {
   const model = getModel();
   
+  const recommendationsSchema = z.object({
+    recommendations: z.array(z.string()).describe("A list of 3-5 personalized health recommendations and insights based on the report."),
+  });
+
+  const structuredModel = model.withStructuredOutput(recommendationsSchema, {
+    name: "health_recommendations",
+  });
+  
   const prompt = `Based on the medical report findings below, generate 3-5 personalized health recommendations and insights in ${state.language || 'English'}.
   
   Guidelines:
   - Focus on lifestyle, diet, or follow-up questions for their doctor.
-  - Be cautious and always include a disclaimer that this is AI-generated and not medical advice.
   - Suggest specific questions the patient should ask their healthcare provider.
   - Output should be in ${state.language || 'English'}.
   
   Findings:
-  ${state.rawExtraction}
-  
-  Format the output as a list of strings, one per line, starting with a bullet point or number.`;
+  ${state.rawExtraction}`;
 
-  const response = await model.invoke(prompt);
-  
-  const parseRecommendations = (content: string) => {
-    const normalized = content
-      .replace(/\r\n/g, "\n")
-      .replace(/(?<!^)\s+(\d+\.\s+)/g, "\n$1")
-      .replace(/(?<!^)\s+([*•-]\s+)/g, "\n$1");
-
-    return normalized
-      .split("\n")
-      .map(line => line.trim())
-      .filter(line => line.startsWith("-") || line.match(/^\d+\./) || line.startsWith("•") || line.startsWith("*"))
-      .map(line => line.replace(/^[-*•]\s*/, "").replace(/^\d+\.\s*/, "").trim())
-      .filter(Boolean);
-  };
-
-  const lines = parseRecommendations(response.content as string);
+  let lines: string[] = [];
+  try {
+    const response = await structuredModel.invoke(prompt);
+    lines = response.recommendations;
+  } catch (e) {
+    console.error("Failed to generate structured recommendations:", e);
+    // Fallback if structured output fails
+    lines = ["An error occurred while generating recommendations."];
+  }
 
   const insightsPrompt = `Based on the findings, provide a one-sentence encouraging insight in ${state.language || 'English'}.
   
@@ -165,7 +165,7 @@ const recommendNode = async (state: ReportStateType) => {
   }
 
   return { 
-    recommendations: lines.length > 0 ? lines : [response.content as string],
+    recommendations: lines.length > 0 ? lines : ["An error occurred while generating recommendations."],
     insights: insightsResponse.content as string,
     resources: resources
   };

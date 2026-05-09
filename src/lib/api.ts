@@ -179,6 +179,15 @@ export async function getReportById(id: string): Promise<{ success: boolean; rep
   };
 }
 
+// Delete a report by ID
+export async function deleteReport(id: string): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${API_BASE_URL}/reports/${id}`, {
+    method: 'DELETE',
+  });
+  
+  return parseAPIResponse(response, 'Failed to delete report');
+}
+
 // Check if the backend server is running
 export async function checkServerHealth(): Promise<boolean> {
   try {

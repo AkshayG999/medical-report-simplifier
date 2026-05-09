@@ -15,6 +15,7 @@ import {
   saveReport as saveReportToAPI,
   SavedReport,
   updateReportAnalysis,
+  deleteReport,
 } from "@/src/lib/api";
 import { ProcessingPage } from "@/src/pages/ProcessingPage";
 import { ReportResultPage } from "@/src/pages/ReportResultPage";
@@ -230,6 +231,15 @@ export default function App() {
     }
   }, []);
 
+  const handleDeleteReport = async (reportId: string) => {
+    try {
+      await deleteReport(reportId);
+      void loadReports(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete this report.");
+    }
+  };
+
   const exportReportSummary = async () => {
     if (!result?.simplifiedReport) return;
 
@@ -350,6 +360,7 @@ export default function App() {
                     navigate("/");
                   }}
                   onOpenReport={(reportId) => navigate(`/reports/${reportId}`)}
+                  onDeleteReport={handleDeleteReport}
                 />
               }
             />
