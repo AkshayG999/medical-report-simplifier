@@ -33,40 +33,45 @@ For local backend development, keep the service account JSON outside source cont
 
 ## Application Screens
 
-The application includes the following main screens:
+The application includes the following main screens shown in `public/`:
 
-- **Report Summary**: A structured, easy-to-read breakdown of the findings.
-- **Personalized Insights**: Encouraging insights and specific health recommendations.
-- **Doctor's Visit Prep**: A curated list of questions to ask during the next consultation.
-- **Trusted Resources**: Direct links to authoritative medical information.
+- **Dashboard Upload**: Choose the explanation language, upload a PDF or image report, and start a new analysis.
+- **Saved Reports**: Review previous analyses with language, file count, and completion status.
+- **Saved Report Detail**: Reopen a completed report with its summary, export action, and uploaded-file access.
+- **Uploaded Report Preview**: Preview one or more saved source files in a focused modal without leaving the report.
+- **Report Summary**: Read a simplified, patient-friendly explanation with doctor-visit questions and a medical disclaimer.
+- **Insights & Resources**: Review personalized recommendations alongside trusted external health resources.
 
 <table>
   <tr>
     <td width="50%">
-      <strong>Upload Screen</strong><br />
-      <img src="public/image-1.png" alt="Upload Screen" width="100%" />
+      <strong>Dashboard Upload</strong><br />
+      <img src="public/image-4.png" alt="Dashboard upload screen" width="100%" />
     </td>
     <td width="50%">
-      <strong>Processing Screen</strong><br />
-      <img src="public/image-2.png" alt="Processing Screen" width="100%" />
+      <strong>Saved Reports</strong><br />
+      <img src="public/image-6.png" alt="Saved reports list" width="100%" />
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <strong>Result Screen</strong><br />
-      <img src="public/image-3.png" alt="Result Screen" width="100%" />
+      <strong>Saved Report Detail</strong><br />
+      <img src="public/image-2.png" alt="Saved report detail with uploaded report access" width="100%" />
     </td>
     <td width="50%">
-      <strong>Insights Screen</strong><br />
-      <img src="public/image-4.png" alt="Insights Screen" width="100%" />
+      <strong>Uploaded Report Preview</strong><br />
+      <img src="public/image-5.png" alt="Uploaded report file preview modal" width="100%" />
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <strong>Saved Reports Screen</strong><br />
-      <img src="public/image-5.png" alt="Saved Reports Screen" width="100%" />
+      <strong>Report Summary</strong><br />
+      <img src="public/image-1.png" alt="Simplified report summary" width="100%" />
     </td>
-    <td width="50%"></td>
+    <td width="50%">
+      <strong>Insights & Resources</strong><br />
+      <img src="public/image-3.png" alt="Personalized insights and trusted resources" width="100%" />
+    </td>
   </tr>
 </table>
 
