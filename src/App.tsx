@@ -390,7 +390,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen text-ink font-sans selection:bg-accent-100 selection:text-accent-900">
+    <div className="min-h-screen flex flex-col text-ink font-sans selection:bg-accent-100 selection:text-accent-900">
       <header className="border-b border-primary-100 bg-white/90 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-5">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
@@ -449,7 +449,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6 relative z-10">
+      <main className="w-full max-w-7xl mx-auto px-6 py-6 relative z-10 flex-1">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/auth" element={<Navigate to="/" replace />} />
@@ -525,7 +525,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="max-w-7xl mx-auto px-6 py-6 border-t border-primary-100/70 relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-clay">
+      <footer className="w-full max-w-7xl mx-auto px-6 py-6 border-t border-primary-100/70 relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-clay">
         <p>© 2026 MedInsight AI. All rights reserved.</p>
         <div className="flex items-center gap-8">
           <button type="button" className="hover:text-primary-400 transition-colors">Privacy Policy</button>
