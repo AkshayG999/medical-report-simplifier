@@ -1,16 +1,14 @@
+import './env.js';
 import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-
-dotenv.config({ path: '.env' });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const configPath = path.join(__dirname, '..', 'firebase-applet-config.json');
+const configPath = path.join(__dirname, 'firebase-applet-config.json');
 const firebaseConfigDefaults = fs.existsSync(configPath)
   ? JSON.parse(fs.readFileSync(configPath, 'utf-8'))
   : {
@@ -50,7 +48,7 @@ if (!admin.apps.length) {
     // Use explicit service account JSON key file
     const resolvedPath = path.isAbsolute(serviceAccountPath)
       ? serviceAccountPath
-      : path.resolve(process.cwd(), serviceAccountPath);
+      : path.resolve(__dirname, serviceAccountPath);
 
     const serviceAccount = JSON.parse(
       fs.readFileSync(resolvedPath, 'utf-8')

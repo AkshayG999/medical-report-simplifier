@@ -481,24 +481,26 @@ The AI workflow is implemented using LangGraph. It contains three main nodes: ex
 <h3>Project Folder Structure</h3>
 
 <div class="diagram">health-report-decoder/
-  src/
-    App.tsx
-    main.tsx
-    index.css
-    lib/
-      api.ts
-      reportGraph.ts
-      utils.ts
+  frontend/
+    src/
+      App.tsx
+      main.tsx
+      index.css
+      lib/
+        api.ts
+        utils.ts
+    public/
+      image-1.png
+      image-2.png
+      image-3.png
+      image-4.png
+    vite.config.ts
   server/
     index.ts
     db.ts
-  public/
-    image-1.png
-    image-2.png
-    image-3.png
-    image-4.png
+    reportGraph.ts
+    pdfExport.ts
   package.json
-  vite.config.ts
   tsconfig.json
   README.md</div>
 
@@ -522,7 +524,7 @@ The AI workflow is implemented using LangGraph. It contains three main nodes: ex
 </table>
 
 <p>
-The project includes screenshots in the <strong>public</strong> folder: image-1.png, image-2.png, image-3.png, and image-4.png. These images can be inserted into this report as upload screen, processing screen, and result screen screenshots.
+The project includes screenshots in the <strong>frontend/public</strong> folder: image-1.png, image-2.png, image-3.png, and image-4.png. These images can be inserted into this report as upload screen, processing screen, and result screen screenshots.
 </p>
 
 <h2>8. Limitations</h2>

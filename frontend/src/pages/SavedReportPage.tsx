@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
-import type { ReportResult } from "@/src/types/report";
-import { ReportResultPage } from "@/src/pages/ReportResultPage";
+import type { ReportResult } from "@/types/report";
+import { ReportResultPage } from "@/pages/ReportResultPage";
 
 interface SavedReportPageProps {
   loadReport: (reportId: string) => Promise<void>;

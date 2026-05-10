@@ -1,9 +1,10 @@
+import './env.js';
 import express from 'express';
 import cors from 'cors';
 import { chromium } from 'playwright';
 import { initializeDatabase, saveReport, updateReportAnalysis, getAllReports, getReportById, getReportFile, deleteReport } from './db.js';
 import { requireAuth, type AuthenticatedRequest } from './auth.js';
-import { buildReportSummaryPdfHtml, ingestReportSummaryContent } from '../src/lib/pdfExport.ts';
+import { buildReportSummaryPdfHtml, ingestReportSummaryContent } from './pdfExport.ts';
 import { reportProcessor } from './reportGraph.ts';
 import { logger, requestLogger } from './logger.js';
 

@@ -1,5 +1,5 @@
 import { auth } from './firebase';
-import type { UploadedReportFile } from '@/src/types/report';
+import type { UploadedReportFile } from '@/types/report';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 

@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import Markdown from "react-markdown";
 import { AlertCircle, ArrowLeft, CheckCircle2, ChevronRight, Download, ExternalLink, Eye, FileDown, FileText, ImageIcon, Lightbulb, Loader2, Stethoscope, X } from "lucide-react";
-import { downloadUploadedReportFile } from "@/src/lib/api";
-import { cn } from "@/src/lib/utils";
-import type { ReportResult, UploadedReportFile } from "@/src/types/report";
+import { downloadUploadedReportFile } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import type { ReportResult, UploadedReportFile } from "@/types/report";
 
 interface ReportResultPageProps {
   result: ReportResult;

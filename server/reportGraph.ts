@@ -1,3 +1,4 @@
+import './env.js';
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { Annotation } from "@langchain/langgraph";

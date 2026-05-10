@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { AlertCircle, ArrowLeft, ChevronRight, FileText, Loader2, Trash2 } from "lucide-react";
-import { cn } from "@/src/lib/utils";
-import type { SavedReport } from "@/src/lib/api";
+import { cn } from "@/lib/utils";
+import type { SavedReport } from "@/lib/api";
 
 interface ReportsPageProps {
   reports: SavedReport[];

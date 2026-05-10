@@ -8,7 +8,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { AnimatePresence, motion } from "motion/react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { Activity, FileText, LogOut, Loader2, RefreshCcw } from "lucide-react";
-import { auth, createPasswordAccount, signInWithGoogle, signInWithPassword, signOutUser } from "@/src/lib/firebase";
+import { auth, createPasswordAccount, signInWithGoogle, signInWithPassword, signOutUser } from "@/lib/firebase";
 import {
   analyzeReport,
   downloadReportSummaryPdf,
@@ -17,14 +17,14 @@ import {
   saveReport as saveReportToAPI,
   SavedReport,
   deleteReport,
-} from "@/src/lib/api";
-import { ProcessingPage } from "@/src/pages/ProcessingPage";
-import { LoginPage } from "@/src/pages/LoginPage";
-import { ReportResultPage } from "@/src/pages/ReportResultPage";
-import { ReportsPage } from "@/src/pages/ReportsPage";
-import { SavedReportPage } from "@/src/pages/SavedReportPage";
-import { UploadPage } from "@/src/pages/UploadPage";
-import type { LanguageOption, ReportResult } from "@/src/types/report";
+} from "@/lib/api";
+import { ProcessingPage } from "@/pages/ProcessingPage";
+import { LoginPage } from "@/pages/LoginPage";
+import { ReportResultPage } from "@/pages/ReportResultPage";
+import { ReportsPage } from "@/pages/ReportsPage";
+import { SavedReportPage } from "@/pages/SavedReportPage";
+import { UploadPage } from "@/pages/UploadPage";
+import type { LanguageOption, ReportResult } from "@/types/report";
 
 const languages: LanguageOption[] = [
   { name: "English", native: "English", flag: "🇬🇧" },

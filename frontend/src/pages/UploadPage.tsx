@@ -19,8 +19,8 @@ import {
   X,
   Upload,
 } from "lucide-react";
-import { cn } from "@/src/lib/utils";
-import type { LanguageOption } from "@/src/types/report";
+import { cn } from "@/lib/utils";
+import type { LanguageOption } from "@/types/report";
 
 interface UploadPageProps {
   files: File[];
