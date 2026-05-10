@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion } from "motion/react";
 import { Activity, AlertCircle, ArrowRight, Eye, EyeOff, FileText, Loader2, Lock, Mail, Phone, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 

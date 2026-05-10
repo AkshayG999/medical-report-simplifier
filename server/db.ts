@@ -70,8 +70,6 @@ async function saveFileToAvailableBucket(
   reportId: string,
   userId: string
 ): Promise<string> {
-  let lastError: unknown;
-
   for (const bucketName of storageBucketNames) {
     const bucket = getStorageBucket(bucketName);
     const storageFile = bucket.file(storagePath);
@@ -107,7 +105,6 @@ async function saveFileToAvailableBucket(
 
       return bucket.name;
     } catch (error) {
-      lastError = error;
       logger.warn('storage.upload.failed', {
         reportId,
         userId,
