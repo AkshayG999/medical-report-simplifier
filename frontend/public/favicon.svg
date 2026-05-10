@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CliniLoom">
+  <rect width="64" height="64" rx="14" fill="#D85A30"/>
+  <path fill="#FFFAF8" d="M18 18h28a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V22a4 4 0 0 1 4-4Z"/>
+  <path fill="#F5C4B3" d="M20 26h24v4H20zm0 8h13v4H20z"/>
+  <path fill="none" stroke="#D85A30" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M23 45h8l5-14 5 8h7"/>
+  <path fill="#993C1D" d="M34 12h-4v6h4zm0 34h-4v6h4z"/>
+</svg>
