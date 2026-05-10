@@ -260,35 +260,35 @@ export function ReportResultPage({ result, error, source, exporting, onBackToRep
   return (
     <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       {error && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-3 text-rose-700 shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 rounded-lg border border-rose-100 bg-rose-50 p-4 text-rose-700 shadow-sm">
           <AlertCircle className="shrink-0 mt-0.5" size={20} />
           <p className="text-sm font-medium leading-relaxed">{error}</p>
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-8 bg-white rounded-lg p-4 sm:p-5 shadow-sm border border-primary-100">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-            <div className="flex items-center gap-3">
+          <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="p-2.5 bg-primary-50 text-primary-600 rounded-lg"><FileText size={22} /></div>
-              <div>
-                <h2 className="text-xl font-extrabold text-ink tracking-tight">Report Summary</h2>
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-extrabold tracking-tight text-ink">Report Summary</h2>
                 <p className="text-xs font-bold text-clay uppercase tracking-widest mt-0.5">Simplified View</p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:flex-wrap sm:items-center">
               {source === "history" && (
-                <button type="button" onClick={onBackToReports} className="h-9 px-2 rounded-md text-xs font-bold text-cocoa hover:text-primary-400 hover:bg-primary-50 transition-colors flex items-center gap-1.5">
+                <button type="button" onClick={onBackToReports} className="flex h-9 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-bold text-cocoa transition-colors hover:bg-primary-50 hover:text-primary-400">
                   <ArrowLeft size={16} />
                   Saved Reports
                 </button>
               )}
-              <button type="button" onClick={onExportPdf} disabled={!result.simplifiedReport || exporting} className="min-h-9 px-3 rounded-lg text-xs font-bold bg-primary-400 text-primary-50 hover:bg-primary-600 disabled:bg-primary-50 disabled:text-primary-100 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+              <button type="button" onClick={onExportPdf} disabled={!result.simplifiedReport || exporting} className="flex min-h-9 items-center justify-center gap-2 rounded-lg bg-primary-400 px-3 text-xs font-bold text-primary-50 transition-colors hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-50 disabled:text-primary-100">
                 {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                 {exporting ? "Exporting..." : "Export PDF"}
               </button>
               <div className={cn(
-                "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-bold border transition-all w-fit",
+                "inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-[11px] font-bold transition-all",
                 result.recommendations ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-primary-50 text-primary-600 border-primary-100 animate-pulse"
               )}>
                 {result.recommendations ? <><CheckCircle2 size={14} /> Analysis Complete</> : <><Loader2 size={14} className="animate-spin" /> Processing...</>}
@@ -296,7 +296,7 @@ export function ReportResultPage({ result, error, source, exporting, onBackToRep
             </div>
           </div>
 
-          <div className="markdown-content text-sm sm:text-[15px] leading-7 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-2">
+          <div className="markdown-content overflow-hidden text-sm leading-7 sm:text-[15px] lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-2">
             {result.simplifiedReport ? <Markdown>{result.simplifiedReport}</Markdown> : (
               <div className="space-y-3">
                 <div className="h-4 bg-primary-50 rounded w-3/4 animate-pulse"></div>
@@ -343,13 +343,13 @@ export function ReportResultPage({ result, error, source, exporting, onBackToRep
             <h2 className="text-xl font-extrabold text-ink tracking-tight">Personalized Insights</h2>
           </div>
           {result.insights ? (
-            <blockquote className="insight-markdown text-sm sm:text-base font-bold text-cocoa leading-7 mb-4 border-l-4 border-primary-400 pl-4">
+            <blockquote className="insight-markdown mb-4 border-l-4 border-primary-400 pl-4 text-sm font-bold leading-7 text-cocoa sm:text-base">
               <Markdown>{result.insights}</Markdown>
             </blockquote>
           ) : <div className="h-10 bg-primary-50 rounded w-full animate-pulse mb-4"></div>}
           <div className="grid grid-cols-1 gap-3">
             {result.recommendations ? result.recommendations.map((rec, i) => (
-              <motion.div key={i} whileHover={{ y: -1 }} className="flex gap-3 p-3.5 rounded-lg bg-bg border border-primary-100 shadow-sm hover:shadow-md transition-all min-w-0">
+              <motion.div key={i} whileHover={{ y: -1 }} className="flex min-w-0 gap-3 rounded-lg border border-primary-100 bg-bg p-3 shadow-sm transition-all hover:shadow-md sm:p-3.5">
                 <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center text-[11px] font-black text-primary-600">{i + 1}</div>
                 <div className="recommendation-markdown min-w-0 flex-1 text-sm text-cocoa font-medium leading-6 break-words"><Markdown>{rec}</Markdown></div>
               </motion.div>
@@ -364,8 +364,8 @@ export function ReportResultPage({ result, error, source, exporting, onBackToRep
           </div>
           <div className="grid grid-cols-1 gap-3">
             {result.resources ? result.resources.map((resource, i) => (
-              <motion.a key={i} href={resource.url} target="_blank" rel="noopener noreferrer" whileHover={{ y: -2 }} className="flex items-center justify-between gap-3 p-3.5 rounded-lg border border-primary-100 bg-bg hover:bg-white hover:border-primary-200 hover:shadow-md transition-all group">
-                <span className="font-bold text-sm text-cocoa group-hover:text-primary-600 transition-colors leading-5">{resource.title}</span>
+              <motion.a key={i} href={resource.url} target="_blank" rel="noopener noreferrer" whileHover={{ y: -2 }} className="group flex min-w-0 items-center justify-between gap-3 rounded-lg border border-primary-100 bg-bg p-3.5 transition-all hover:border-primary-200 hover:bg-white hover:shadow-md">
+                <span className="min-w-0 break-words text-sm font-bold leading-5 text-cocoa transition-colors group-hover:text-primary-600">{resource.title}</span>
                 <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-clay/60 group-hover:text-primary-600 group-hover:bg-primary-50 transition-all shadow-sm shrink-0">
                   <ExternalLink size={16} />
                 </div>

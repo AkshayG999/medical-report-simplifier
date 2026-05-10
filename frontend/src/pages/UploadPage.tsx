@@ -82,11 +82,11 @@ function ReportPreview({ files }: { files: File[] }) {
       className="overflow-hidden rounded-lg border border-primary-100 bg-white shadow-sm"
     >
       <div className="flex flex-col gap-2 border-b border-primary-100 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
+        <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-ink">
             <FileText size={18} />
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="text-sm font-extrabold text-ink">Report preview</h3>
             <p className="mt-0.5 max-w-xl truncate text-xs font-semibold text-clay">
               {files.length} {files.length === 1 ? "file" : "files"} selected
@@ -113,14 +113,14 @@ function ReportPreview({ files }: { files: File[] }) {
                   </span>
                 </div>
                 {isImage ? (
-                  <div className="flex h-56 items-center justify-center bg-white">
+                  <div className="flex h-48 items-center justify-center bg-white sm:h-56">
                     <img src={url} alt={`Preview of ${file.name}`} className="h-full w-full object-contain" />
                   </div>
                 ) : isPdf ? (
                   <iframe
                     src={`${url}#toolbar=0&navpanes=0`}
                     title={`Preview of ${file.name}`}
-                    className="h-64 w-full bg-white"
+                    className="h-56 w-full bg-white sm:h-64"
                   />
                 ) : (
                   <div className="flex h-56 flex-col items-center justify-center p-6 text-center">
@@ -179,7 +179,7 @@ function LanguagePicker({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute right-0 z-30 mt-2 w-full overflow-hidden rounded-xl border border-primary-100 bg-white shadow-xl shadow-primary-100/50"
+          className="absolute left-0 right-0 z-30 mt-2 w-full overflow-hidden rounded-xl border border-primary-100 bg-white shadow-xl shadow-primary-100/50"
         >
           <div className="border-b border-primary-100 bg-primary-50/50 p-3">
             <label className="relative block">
@@ -301,14 +301,14 @@ export function UploadPage({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="space-y-5"
+      className="space-y-4 sm:space-y-5"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-5 items-start">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-5">
         <div className="space-y-4">
           <section className="bg-white border border-primary-100 rounded-lg shadow-sm overflow-hidden">
-            <div className="relative min-h-36 p-5 sm:p-6 border-b border-primary-100 overflow-hidden bg-gradient-to-br from-white to-primary-50/60">
+            <div className="relative min-h-36 overflow-hidden border-b border-primary-100 bg-gradient-to-br from-white to-primary-50/60 p-4 sm:p-6">
               <div className="relative z-10 max-w-xl">
-                <h4 className="text-2xl sm:text-[30px] font-extrabold text-ink mb-2 tracking-tight leading-tight">
+                <h4 className="mb-2 text-2xl font-extrabold leading-tight tracking-tight text-ink sm:text-[30px]">
                   Upload a medical report
                 </h4>
                 <p className="text-clay text-sm leading-6 max-w-xl">
@@ -333,20 +333,20 @@ export function UploadPage({
             </div>
 
             <div className="divide-y divide-primary-100">
-              <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                <div className="flex items-center gap-4 shrink-0">
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div className="flex min-w-0 shrink-0 items-center gap-3 sm:gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                     <Globe2 size={20} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-extrabold text-ink">1. Pick the language </h3>
+                    <h3 className="text-sm font-extrabold text-ink">1. Pick the language</h3>
                     <p className="mt-0.5 text-xs font-medium text-clay">for your simplified report explanation</p>
                   </div>
                 </div>
                 <LanguagePicker language={language} languages={languages} onLanguageChange={onLanguageChange} />
               </div>
 
-              <div className="p-5 sm:p-6 space-y-4">
+              <div className="space-y-4 p-4 sm:p-6">
                 <div className="flex items-center gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                     <Upload size={20} />
@@ -357,7 +357,7 @@ export function UploadPage({
                 <div
                   {...getRootProps()}
                   className={cn(
-                    "min-h-52 rounded-lg border-2 border-dashed p-5 flex flex-col items-center justify-center text-center transition-all",
+                    "flex min-h-52 flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 text-center transition-all sm:p-5",
                     isDragActive ? "border-primary-400 bg-primary-50" : "border-primary-200 bg-white",
                     files.length > 0 && "border-emerald-300 bg-emerald-50/20"
                   )}
@@ -377,7 +377,7 @@ export function UploadPage({
                       <p className="mt-2 text-sm font-bold text-emerald-700">{formatFileSize(totalFileSize)} - Ready to analyze</p>
                       <div className="mt-4 w-full max-w-2xl space-y-2">
                         {files.map((selectedFile) => (
-                          <div key={`${selectedFile.name}-${selectedFile.lastModified}`} className="flex items-center justify-between gap-3 rounded-lg border border-primary-100 bg-white px-3 py-2 text-left">
+                          <div key={`${selectedFile.name}-${selectedFile.lastModified}`} className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-primary-100 bg-white px-3 py-2 text-left">
                             <div className="min-w-0">
                               <p className="truncate text-sm font-bold text-ink">{selectedFile.name}</p>
                               <p className="text-xs font-semibold text-clay">{formatFileSize(selectedFile.size)}</p>
@@ -398,7 +398,7 @@ export function UploadPage({
                           type="button"
                           onClick={open}
                           disabled={!canAddMoreFiles}
-                          className="h-10 px-6 rounded-md bg-white border border-primary-100 text-sm font-bold text-primary-600 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50 transition-colors inline-flex items-center gap-2"
+                          className="inline-flex h-10 items-center gap-2 rounded-md border border-primary-100 bg-white px-4 text-sm font-bold text-primary-600 transition-colors hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6"
                         >
                           <FileText size={16} />
                           {hasPdf ? "PDF selected" : "Add More Images"}
@@ -422,7 +422,7 @@ export function UploadPage({
                 </div>
               </div>
 
-              <div className="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4">
+              <div className="space-y-4 px-4 pb-4 sm:px-6 sm:pb-6">
                 {error && (
                   <div className="rounded-lg border border-rose-100 bg-rose-50 p-4 text-sm font-medium text-rose-700">
                     {error}
@@ -444,7 +444,7 @@ export function UploadPage({
                   <ArrowRight size={20} />
                 </button>
 
-                <p className="flex items-center justify-center gap-2 text-[11px] text-clay">
+                <p className="flex items-center justify-center gap-2 text-center text-[11px] leading-5 text-clay">
                   <Lock size={15} />
                   Your files are secure and private. We never share your data.
                 </p>
@@ -455,7 +455,7 @@ export function UploadPage({
           <ReportPreview files={files} />
         </div>
 
-        <aside className="space-y-4">
+        <aside className="grid gap-4 md:grid-cols-3 xl:block xl:space-y-4">
           <section className="rounded-lg bg-primary-800 text-primary-50 p-5 shadow-sm">
             <h3 className="text-lg font-extrabold mb-4">What you get</h3>
             <div className="space-y-4">
@@ -511,13 +511,13 @@ export function UploadPage({
         </aside>
       </div>
 
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-lg bg-white border border-primary-100 p-4 shadow-sm">
+      <section className="grid grid-cols-1 gap-3 rounded-lg border border-primary-100 bg-white p-3 shadow-sm sm:p-4 md:grid-cols-3">
         {[
           { icon: <Stethoscope size={36} />, title: "Simplified Jargon", desc: "We break down complex medical terms into plain language you can actually understand." },
           { icon: <Lightbulb size={36} />, title: "Actionable Insights", desc: "Get personalized recommendations and specific questions to ask your healthcare provider." },
           { icon: <ShieldCheck size={36} />, title: "Secure & Private", desc: "Your sensitive medical data is processed securely and never shared." },
         ].map((item) => (
-          <div key={item.title} className="grid grid-cols-[64px_1fr] gap-3 items-start p-2">
+          <div key={item.title} className="grid grid-cols-[52px_1fr] items-start gap-3 p-2 sm:grid-cols-[64px_1fr]">
             <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
               {item.icon}
             </div>

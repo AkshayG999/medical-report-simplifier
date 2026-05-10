@@ -44,9 +44,9 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -30 }}
-      className="max-w-4xl mx-auto"
+      className="mx-auto max-w-4xl"
     >
-      <div className="mb-8 space-y-4">
+      <div className="mb-6 space-y-4 sm:mb-8">
         <button
           type="button"
           onClick={onBack}
@@ -56,8 +56,8 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
           Back
         </button>
         <div>
-          <h2 className="text-3xl font-extrabold text-ink mb-3 tracking-tight">Saved Reports</h2>
-          <p className="text-clay font-medium">
+          <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-ink sm:mb-3 sm:text-3xl">Saved Reports</h2>
+          <p className="text-sm font-medium leading-6 text-clay sm:text-base">
             Open a completed report to view the saved summary, recommendations, and resources.
           </p>
         </div>
@@ -67,7 +67,7 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-5 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-4 text-rose-700 shadow-sm"
+          className="mb-6 flex items-start gap-3 rounded-lg border border-rose-100 bg-rose-50 p-4 text-rose-700 shadow-sm sm:mb-8 sm:gap-4 sm:p-5"
         >
           <AlertCircle className="shrink-0 mt-0.5" size={20} />
           <p className="text-sm font-medium leading-relaxed">{error}</p>
@@ -75,7 +75,7 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
       )}
 
       {loading ? (
-        <div className="bg-white border border-primary-100 rounded-[2rem] p-10 flex items-center justify-center gap-3 text-clay font-bold">
+        <div className="flex items-center justify-center gap-3 rounded-lg border border-primary-100 bg-white p-6 text-sm font-bold text-clay sm:p-10 sm:text-base">
           <Loader2 className="animate-spin text-primary-400" />
           Loading saved reports...
         </div>
@@ -84,17 +84,17 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
           {reports.map((report) => (
             <div
               key={report.id}
-              className="w-full text-left bg-white border border-primary-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-primary-200 transition-all grid grid-cols-1 gap-4 cursor-pointer group relative sm:grid-cols-[minmax(0,1fr)_auto]"
+              className="group relative grid w-full cursor-pointer grid-cols-1 gap-4 rounded-lg border border-primary-100 bg-white p-4 text-left shadow-sm transition-all hover:border-primary-200 hover:shadow-md sm:grid-cols-[minmax(0,1fr)_auto] sm:p-5"
               onClick={() => onOpenReport(report.id)}
             >
               <div className="min-w-0">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="mb-2 flex min-w-0 items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-400 flex items-center justify-center shrink-0">
                     <FileText size={20} />
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-bold text-ink truncate">{report.fileName}</h3>
-                    <p className="text-xs font-bold uppercase tracking-widest text-clay/60">
+                    <p className="truncate text-xs font-bold uppercase tracking-widest text-clay/60">
                       {report.language} - {(report.fileSize / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
@@ -106,7 +106,7 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
                   </div>
                 )}
               </div>
-              <div className="flex items-center justify-end gap-3 shrink-0">
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 sm:justify-end sm:gap-3">
                 <span className={cn(
                   "px-3 py-1 rounded-full text-xs font-bold border capitalize",
                   report.status === "completed" && "bg-emerald-50 text-emerald-600 border-emerald-100",
@@ -122,7 +122,7 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
                     e.stopPropagation();
                     setReportToDelete(report.id);
                   }}
-                  className="p-2 -mr-2 text-clay/40 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  className="rounded-lg p-2 text-clay/70 transition-colors hover:bg-primary-50 hover:text-primary-600 sm:-mr-2 sm:text-clay/40 sm:opacity-0 sm:group-hover:opacity-100"
                   title="Delete report"
                 >
                   <Trash2 size={18} />
@@ -133,7 +133,7 @@ export function ReportsPage({ reports, loading, error, onBack, onOpenReport, onD
           ))}
         </div>
       ) : (
-        <div className="bg-white border border-primary-100 rounded-[2rem] p-10 text-center">
+        <div className="rounded-lg border border-primary-100 bg-white p-6 text-center sm:p-10">
           <FileText size={36} className="mx-auto text-primary-100 mb-4" />
           <h3 className="font-bold text-ink mb-2">No saved reports yet</h3>
           <p className="text-sm text-clay font-medium">Run an analysis first, then it will appear here.</p>

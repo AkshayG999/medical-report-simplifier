@@ -56,8 +56,8 @@ export function LoginPage({ googleLoading, passwordLoading, error, onGoogleSignI
   };
 
   return (
-    <main className="min-h-screen bg-bg px-4 py-6 text-ink sm:px-6">
-      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl grid-cols-1 overflow-hidden rounded-lg border border-primary-100 bg-white shadow-xl shadow-primary-100/30 lg:grid-cols-[minmax(0,1fr)_430px]">
+    <main className="min-h-screen bg-bg px-3 py-3 text-ink sm:px-6 sm:py-6">
+      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-6xl grid-cols-1 overflow-hidden rounded-lg border border-primary-100 bg-white shadow-xl shadow-primary-100/30 sm:min-h-[calc(100vh-3rem)] lg:grid-cols-[minmax(0,1fr)_430px]">
         <section className="relative hidden bg-primary-900 p-8 text-primary-50 lg:flex lg:flex-col lg:justify-between">
           <div>
             <div className="mb-8 flex items-center gap-3">
@@ -95,16 +95,16 @@ export function LoginPage({ googleLoading, passwordLoading, error, onGoogleSignI
           </div>
         </section>
 
-        <section className="flex flex-col justify-center p-5 sm:p-8">
-          <div className="mb-7 flex items-center gap-3 lg:hidden">
+        <section className="flex min-w-0 flex-col justify-center p-4 sm:p-8">
+          <div className="mb-6 flex min-w-0 items-center gap-3 lg:hidden">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-400 text-primary-50">
               <Activity size={22} />
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight">MedInsight AI</h1>
+            <h1 className="truncate text-xl font-extrabold tracking-tight">MedInsight AI</h1>
           </div>
 
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold tracking-tight text-ink">Access your reports</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-ink sm:text-[1.7rem]">Access your reports</h2>
             <p className="mt-2 text-sm font-medium leading-6 text-clay">
               Use Google, or create a password account with email/mobile.
             </p>

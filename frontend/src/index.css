@@ -26,6 +26,16 @@
 }
 
 @layer base {
+  html {
+    @apply overflow-x-hidden;
+  }
+
+  *,
+  *::before,
+  *::after {
+    min-width: 0;
+  }
+
   :root {
     --color-primary-50:  #FAECE7;
     --color-primary-100: #F5C4B3;
@@ -90,6 +100,8 @@
 
   body {
     @apply bg-bg text-ink antialiased;
+    min-width: 320px;
+    overflow-x: hidden;
     background:
       radial-gradient(circle at top left, rgb(250 199 117 / 0.22), transparent 32rem),
       linear-gradient(180deg, #FFFAF8 0%, #FAECE7 100%);
@@ -105,7 +117,7 @@
     @apply text-base font-bold mb-2 mt-4 text-cocoa tracking-tight leading-tight;
   }
   .markdown-content p {
-    @apply mb-3 last:mb-0 text-cocoa leading-7;
+    @apply mb-3 last:mb-0 text-cocoa leading-7 break-words;
   }
   .markdown-content ul {
     @apply list-disc pl-5 mb-4 space-y-1.5 text-cocoa leading-7;
@@ -132,7 +144,7 @@
   }
 
   .recommendation-markdown p {
-    @apply mb-2 last:mb-0 text-cocoa leading-6;
+    @apply mb-2 last:mb-0 text-cocoa leading-6 break-words;
   }
 
   .recommendation-markdown ul {
@@ -163,8 +175,19 @@
   
   .bento-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
     gap: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
