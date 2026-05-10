@@ -349,7 +349,7 @@ export default function App() {
       const date = new Date().toISOString().slice(0, 10);
 
       link.href = downloadUrl;
-      link.download = `medinsight-report-summary-${date}.pdf`;
+      link.download = `cliniloom-report-summary-${date}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -397,7 +397,7 @@ export default function App() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-400 text-primary-50 shadow-sm shadow-primary-100">
               <Activity size={22} />
             </div>
-            <h1 className="truncate text-base font-extrabold tracking-tight text-ink sm:text-xl">MedInsight AI</h1>
+            <h1 className="truncate text-base font-extrabold tracking-tight text-ink sm:text-xl">CliniLoom</h1>
           </motion.div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold">
@@ -531,7 +531,7 @@ export default function App() {
       </main>
 
       <footer className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 border-t border-primary-100/70 px-3 py-5 text-center text-xs font-semibold text-clay sm:flex-row sm:px-5 sm:text-left lg:px-6">
-        <p>© 2026 MedInsight AI. All rights reserved.</p>
+        <p>© 2026 CliniLoom. All rights reserved.</p>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:justify-end">
           <button type="button" className="hover:text-primary-400 transition-colors">Privacy Policy</button>
           <button type="button" className="hover:text-primary-400 transition-colors">Terms of Service</button>

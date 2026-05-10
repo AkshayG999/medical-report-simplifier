@@ -1,6 +1,6 @@
-# MedInsight AI
+# CliniLoom
 
-MedInsight AI is an AI-powered medical report analyzer that simplifies complex lab and imaging reports into actionable insights and recommendations. It uses LangGraph and Gemini AI to provide a compassionate and clear understanding of health data.
+CliniLoom is an AI-powered medical report analyzer that simplifies complex lab and imaging reports into actionable insights and recommendations. It uses LangGraph and Gemini AI to provide a compassionate and clear understanding of health data.
 
 ## Features
 
@@ -53,6 +53,44 @@ Run locally from separate terminals:
 cd frontend && npm run dev
 cd server && npm start
 ```
+
+## Deploy Frontend To Cloudflare Pages
+
+The frontend is a Vite React app, so Cloudflare Pages should build `frontend/` and publish `frontend/dist/`.
+
+### Option 1: Git Integration
+
+In Cloudflare Dashboard > Workers & Pages > Create application > Pages > Import an existing Git repository:
+
+- Root directory: `frontend`
+- Build command: `npm run build`
+- Build output directory: `dist`
+
+Add these Cloudflare Pages environment variables for production:
+
+```bash
+VITE_API_BASE_URL="https://YOUR_BACKEND_DOMAIN/api"
+VITE_FIREBASE_API_KEY="YOUR_FIREBASE_WEB_API_KEY"
+VITE_FIREBASE_AUTH_DOMAIN="YOUR_PROJECT.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID="YOUR_PROJECT_ID"
+VITE_FIREBASE_STORAGE_BUCKET="YOUR_PROJECT.firebasestorage.app"
+VITE_FIREBASE_MESSAGING_SENDER_ID="YOUR_SENDER_ID"
+VITE_FIREBASE_APP_ID="YOUR_FIREBASE_WEB_APP_ID"
+VITE_FIREBASE_MEASUREMENT_ID=""
+```
+
+Also add your Cloudflare Pages domain, such as `https://medical-report-simplifier.pages.dev`, to the backend `CORS_ORIGIN` value and to Firebase Authentication authorized domains.
+
+### Option 2: Direct Upload From This Machine
+
+```bash
+cd frontend
+cp .env.production.example .env.production
+npm run cloudflare:create
+npm run deploy:cloudflare
+```
+
+Set the real production values in `.env.production` before deploying. The deploy command builds `dist/` and uploads it with Wrangler. In non-interactive shells, set `CLOUDFLARE_API_TOKEN` before running these commands.
 
 ## Application Screens
 

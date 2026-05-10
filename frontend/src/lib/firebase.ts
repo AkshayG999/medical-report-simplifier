@@ -41,7 +41,7 @@ function authEmailFromIdentifier(identifier: string): string {
     throw new Error('Enter a valid email address or mobile number.');
   }
 
-  return `${phoneDigits}@phone.medinsight.local`;
+  return `${phoneDigits}@phone.cliniloom.local`;
 }
 
 export function signInWithPassword(identifier: string, password: string) {

@@ -141,7 +141,7 @@ export function buildReportSummaryPdfHtml(content: ReportSummaryPdfContent): str
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MedInsight AI Report Summary</title>
+    <title>CliniLoom Report Summary</title>
     <style>
       @page {
         size: A4;
@@ -280,7 +280,7 @@ export function buildReportSummaryPdfHtml(content: ReportSummaryPdfContent): str
   <body>
     <main>
       <header>
-        <div class="brand">MedInsight AI</div>
+        <div class="brand">CliniLoom</div>
         <h1>Report Summary</h1>
         <div class="meta">Language: ${escapeHtml(content.language)} | Generated: ${escapeHtml(content.generatedAt)}</div>
       </header>

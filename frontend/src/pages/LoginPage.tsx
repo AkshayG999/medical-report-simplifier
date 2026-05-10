@@ -65,7 +65,7 @@ export function LoginPage({ googleLoading, passwordLoading, error, onGoogleSignI
                 <Activity size={23} />
               </div>
               <div>
-                <h1 className="text-xl font-extrabold tracking-tight">MedInsight AI</h1>
+                <h1 className="text-xl font-extrabold tracking-tight">CliniLoom</h1>
                 <p className="text-xs font-bold uppercase tracking-widest text-primary-100">Secure report workspace</p>
               </div>
             </div>
@@ -100,7 +100,7 @@ export function LoginPage({ googleLoading, passwordLoading, error, onGoogleSignI
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-400 text-primary-50">
               <Activity size={22} />
             </div>
-            <h1 className="truncate text-xl font-extrabold tracking-tight">MedInsight AI</h1>
+            <h1 className="truncate text-xl font-extrabold tracking-tight">CliniLoom</h1>
           </div>
 
           <div className="mb-6">

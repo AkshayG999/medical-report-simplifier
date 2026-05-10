@@ -377,7 +377,7 @@ app.post('/api/reports/export-summary-pdf', async (req, res) => {
     });
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="medinsight-report-summary.pdf"');
+    res.setHeader('Content-Disposition', 'attachment; filename="cliniloom-report-summary.pdf"');
     logger.info('pdf_export.completed', {
       requestId: req.requestId,
       bytes: pdf.length,

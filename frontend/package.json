@@ -1,11 +1,13 @@
 {
-  "name": "react-example",
+  "name": "cliniloom-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts --port=3000 --host=0.0.0.0",
     "build": "vite build --config vite.config.ts",
+    "cloudflare:create": "npx --yes wrangler pages project create medical-report-simplifier --production-branch main",
+    "deploy:cloudflare": "npm run build && npx --yes wrangler pages deploy dist --project-name medical-report-simplifier",
     "preview": "vite preview --config vite.config.ts",
     "lint": "tsc --noEmit"
   },
