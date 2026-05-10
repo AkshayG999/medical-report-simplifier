@@ -79,7 +79,7 @@ VITE_FIREBASE_APP_ID="YOUR_FIREBASE_WEB_APP_ID"
 VITE_FIREBASE_MEASUREMENT_ID=""
 ```
 
-Also add your Cloudflare Pages domain, such as `https://medical-report-simplifier.pages.dev`, to the backend `CORS_ORIGIN` value and to Firebase Authentication authorized domains.
+Also add your app domain, `https://cliniloom.99prod.site`, to the backend `CORS_ORIGIN` value and to Firebase Authentication authorized domains.
 
 ### Option 2: Direct Upload From This Machine
 
@@ -91,6 +91,8 @@ npm run deploy:cloudflare
 ```
 
 Set the real production values in `.env.production` before deploying. The deploy command builds `dist/` and uploads it with Wrangler. In non-interactive shells, set `CLOUDFLARE_API_TOKEN` before running these commands.
+
+The SEO metadata, social preview image, `robots.txt`, and `sitemap.xml` currently use `https://cliniloom.99prod.site/`.
 
 ## Application Screens
 
