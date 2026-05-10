@@ -8,34 +8,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const configPath = path.join(__dirname, 'firebase-applet-config.json');
-const firebaseConfigDefaults = fs.existsSync(configPath)
-  ? JSON.parse(fs.readFileSync(configPath, 'utf-8'))
-  : {
-      projectId: 'MY_PROJECT_ID',
-      appId: 'MY_FIREBASE_WEB_APP_ID',
-      apiKey: 'MY_FIREBASE_WEB_API_KEY',
-      authDomain: 'MY_PROJECT.firebaseapp.com',
-      firestoreDatabaseId: '(default)',
-      storageBucket: 'MY_PROJECT.firebasestorage.app',
-      messagingSenderId: 'MY_SENDER_ID',
-      measurementId: '',
-    };
-const firebaseConfig = {
-  ...firebaseConfigDefaults,
-  projectId: process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigDefaults.projectId,
-  appId: process.env.VITE_FIREBASE_APP_ID || firebaseConfigDefaults.appId,
-  apiKey: process.env.VITE_FIREBASE_API_KEY || firebaseConfigDefaults.apiKey,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigDefaults.authDomain,
-  firestoreDatabaseId: process.env.FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfigDefaults.firestoreDatabaseId,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigDefaults.storageBucket,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigDefaults.messagingSenderId,
-  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfigDefaults.measurementId,
-};
-
+const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || 'MY_PROJECT_ID';
+const firestoreDatabaseId = process.env.FIREBASE_FIRESTORE_DATABASE_ID || '(default)';
+const configuredStorageBucket = process.env.FIREBASE_STORAGE_BUCKET || `${firebaseProjectId}.firebasestorage.app`;
 const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
-const configuredStorageBucket = process.env.FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket;
-const legacyStorageBucket = `${firebaseConfig.projectId}.appspot.com`;
+const legacyStorageBucket = `${firebaseProjectId}.appspot.com`;
 export const storageBucketNames = Array.from(new Set([
   configuredStorageBucket,
   legacyStorageBucket,
@@ -56,7 +33,7 @@ if (!admin.apps.length) {
 
     app = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      projectId: firebaseConfig.projectId,
+      projectId: firebaseProjectId,
       storageBucket: configuredStorageBucket,
     });
   } else {
@@ -69,7 +46,7 @@ if (!admin.apps.length) {
 
     // Use Application Default Credentials in managed Google Cloud runtimes.
     app = admin.initializeApp({
-      projectId: firebaseConfig.projectId,
+      projectId: firebaseProjectId,
       storageBucket: configuredStorageBucket,
     });
   }
@@ -78,11 +55,9 @@ if (!admin.apps.length) {
 }
 
 // Use the specific named Firestore database from the config
-const databaseId: string = firebaseConfig.firestoreDatabaseId || '(default)';
-export const db = getFirestore(app, databaseId);
+export const db = getFirestore(app, firestoreDatabaseId);
 export function getStorageBucket(bucketName = configuredStorageBucket) {
   return admin.storage(app).bucket(bucketName);
 }
 
-export { firebaseConfig };
 export default admin;
