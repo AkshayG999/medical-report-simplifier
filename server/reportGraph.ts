@@ -46,13 +46,14 @@ function redactPII(content: string): string {
 // Initialize the model
 const getModel = () => {
   const apiKey = process.env.GEMINI_API_KEY;
+  const model=process.env.GEMINI_MODEL || "gemini-2.5-flash";
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not set");
   }
   return new ChatGoogleGenerativeAI({
     apiKey,
-    model: "gemini-3-flash-preview",
-    // model: "gemini-2.5-flash",
+    // model: "gemini-3-flash-preview",
+    model: model,
     maxOutputTokens: 5048,
   });
 };
