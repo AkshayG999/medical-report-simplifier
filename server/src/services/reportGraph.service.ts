@@ -1,9 +1,9 @@
-import './env.js';
+import '../config/env.js';
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { Annotation } from "@langchain/langgraph";
 import { z } from "zod";
-import { logger } from "./logger.js";
+import { logger } from "../utils/logger.js";
 
 interface ReportFileInput {
   fileName: string;

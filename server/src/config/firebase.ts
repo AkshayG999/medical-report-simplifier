@@ -3,10 +3,7 @@ import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { serverRoot } from './env.js';
 
 const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || 'MY_PROJECT_ID';
 const firestoreDatabaseId = process.env.FIREBASE_FIRESTORE_DATABASE_ID || '(default)';
@@ -25,7 +22,7 @@ if (!admin.apps.length) {
     // Use explicit service account JSON key file
     const resolvedPath = path.isAbsolute(serviceAccountPath)
       ? serviceAccountPath
-      : path.resolve(__dirname, serviceAccountPath);
+      : path.resolve(serverRoot, serviceAccountPath);
 
     const serviceAccount = JSON.parse(
       fs.readFileSync(resolvedPath, 'utf-8')

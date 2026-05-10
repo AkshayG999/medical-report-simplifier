@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import { db, getStorageBucket, storageBucketNames } from './firebase.js';
-import { logger } from './logger.js';
+import { db, getStorageBucket, storageBucketNames } from '../config/firebase.js';
+import { logger } from '../utils/logger.js';
 
 const REPORTS_COLLECTION = 'reports';
 const REQUIRE_FIREBASE_STORAGE = process.env.REQUIRE_FIREBASE_STORAGE === 'true';

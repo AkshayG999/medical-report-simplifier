@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
-import admin from './firebase.js';
-import { logger } from './logger.js';
+import admin from '../config/firebase.js';
+import { logger } from '../utils/logger.js';
 
 export interface AuthenticatedRequest extends Request {
   user: admin.auth.DecodedIdToken;

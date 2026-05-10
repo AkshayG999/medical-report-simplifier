@@ -1,91 +1,32 @@
-import './env.js';
-import express from 'express';
-import cors from 'cors';
+import type { Request, Response } from 'express';
 import { chromium } from 'playwright';
-import { initializeDatabase, saveReport, updateReportAnalysis, getAllReports, getReportById, getReportFile, deleteReport } from './db.js';
-import { requireAuth, type AuthenticatedRequest } from './auth.js';
-import { buildReportSummaryPdfHtml, ingestReportSummaryContent } from './pdfExport.ts';
-import { reportProcessor } from './reportGraph.ts';
-import { logger, requestLogger } from './logger.js';
+import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import {
+  deleteReport,
+  getAllReports,
+  getReportById,
+  getReportFile,
+  saveReport,
+  updateReportAnalysis,
+} from '../services/report.service.js';
+import {
+  buildReportSummaryPdfHtml,
+  ingestReportSummaryContent,
+} from '../services/pdfExport.service.js';
+import { reportProcessor } from '../services/reportGraph.service.js';
+import { getSafeAnalysisErrorMessage } from '../utils/analysis-error.util.js';
+import { logger } from '../utils/logger.js';
 
-const app = express();
-const PORT = Number(process.env.PORT || 3001);
 const VALID_STATUSES = new Set(['pending', 'processing', 'completed', 'failed']);
-const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
-const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 120);
-const allowedOrigins = new Set(
-  (process.env.CORS_ORIGIN || process.env.APP_URL || 'http://localhost:3000,http://127.0.0.1:3000')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-);
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
-function getSafeAnalysisErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error || '');
-
-  if (/429|quota|too many requests|rate limit/i.test(message)) {
-    return 'AI analysis quota was reached. Please try again later.';
-  }
-
-  if (/api key|permission|unauthorized|forbidden|billing/i.test(message)) {
-    return 'AI analysis is temporarily unavailable. Please check the server configuration.';
-  }
-
-  if (/timeout|deadline|network|fetch/i.test(message)) {
-    return 'AI analysis timed out. Please try again.';
-  }
-
-  return 'AI analysis failed. Please try again.';
+function getUserId(req: Request): string {
+  return (req as unknown as AuthenticatedRequest).user.uid;
 }
 
-function rateLimit(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const now = Date.now();
-  const key = req.ip || req.header('x-forwarded-for') || 'unknown';
-  const current = rateLimitStore.get(key);
-
-  if (!current || current.resetAt <= now) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return next();
-  }
-
-  if (current.count >= RATE_LIMIT_MAX) {
-    logger.warn('rate_limit.exceeded', {
-      requestId: req.requestId,
-      key,
-      path: req.path,
-      count: current.count,
-      limit: RATE_LIMIT_MAX,
-    });
-    return res.status(429).json({ success: false, error: 'Too many requests. Please try again later.' });
-  }
-
-  current.count += 1;
-  return next();
-}
-
-// Middleware
-app.use(requestLogger);
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error('Not allowed by CORS'));
-  },
-}));
-app.use(express.json({ limit: '50mb' }));
-
-// API Routes
-app.use('/api/reports', rateLimit);
-app.use('/api/reports', requireAuth);
-
-// Save initial report (before AI processing)
-app.post('/api/reports', async (req, res) => {
+export async function createReport(req: Request, res: Response) {
   try {
     const { fileName, fileSize, mimeType, language, files } = req.body;
-    const { uid } = (req as unknown as AuthenticatedRequest).user;
+    const uid = getUserId(req);
     logger.info('report.create.requested', {
       requestId: req.requestId,
       userId: uid,
@@ -137,14 +78,14 @@ app.post('/api/reports', async (req, res) => {
       mimeType: mimeType.trim(),
       language: language || 'English',
       files,
-      status: 'pending'
+      status: 'pending',
     });
 
     res.status(201).json({
       success: true,
       reportId,
       message: 'Report saved successfully',
-      status: 'pending'
+      status: 'pending',
     });
   } catch (error) {
     logger.error('report.create.failed', {
@@ -153,13 +94,12 @@ app.post('/api/reports', async (req, res) => {
     });
     res.status(500).json({ success: false, error: 'Failed to save report' });
   }
-});
+}
 
-// Update report with AI analysis results
-app.put('/api/reports/:id/analysis', async (req, res) => {
+export async function updateAnalysis(req: Request, res: Response) {
   try {
     const { status, rawExtraction, simplifiedReport, recommendations, insights, resources, errorMessage } = req.body;
-    const { uid } = (req as unknown as AuthenticatedRequest).user;
+    const uid = getUserId(req);
     logger.info('report.analysis_update.requested', {
       requestId: req.requestId,
       userId: uid,
@@ -184,7 +124,7 @@ app.put('/api/reports/:id/analysis', async (req, res) => {
       recommendations: recommendations ? JSON.stringify(recommendations) : null,
       insights,
       resources: resources ? JSON.stringify(resources) : null,
-      errorMessage
+      errorMessage,
     });
 
     if (!success) {
@@ -195,7 +135,7 @@ app.put('/api/reports/:id/analysis', async (req, res) => {
     res.json({
       success: true,
       message: 'Report analysis updated successfully',
-      status
+      status,
     });
   } catch (error) {
     logger.error('report.analysis_update.failed', {
@@ -205,12 +145,11 @@ app.put('/api/reports/:id/analysis', async (req, res) => {
     });
     res.status(500).json({ success: false, error: 'Failed to update report analysis' });
   }
-});
+}
 
-// Run AI analysis server-side so Gemini credentials never reach the browser.
-app.post('/api/reports/:id/analyze', async (req, res) => {
+export async function analyzeReport(req: Request, res: Response) {
   try {
-    const { uid } = (req as unknown as AuthenticatedRequest).user;
+    const uid = getUserId(req);
     const { language, files } = req.body;
     const startedAt = Date.now();
     logger.info('analysis.requested', {
@@ -297,7 +236,7 @@ app.post('/api/reports/:id/analyze', async (req, res) => {
     });
 
     try {
-      const { uid } = (req as unknown as AuthenticatedRequest).user;
+      const uid = getUserId(req);
       const safeErrorMessage = getSafeAnalysisErrorMessage(error);
       await updateReportAnalysis(uid, req.params.id, {
         status: 'failed',
@@ -313,10 +252,9 @@ app.post('/api/reports/:id/analyze', async (req, res) => {
 
     res.status(500).json({ success: false, error: getSafeAnalysisErrorMessage(error) });
   }
-});
+}
 
-// Export report summary and insights as a directly downloadable PDF.
-app.post('/api/reports/export-summary-pdf', async (req, res) => {
+export async function exportSummaryPdf(req: Request, res: Response) {
   let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
 
   try {
@@ -397,12 +335,11 @@ app.post('/api/reports/export-summary-pdf', async (req, res) => {
       await browser.close();
     }
   }
-});
+}
 
-// Get all reports
-app.get('/api/reports', async (req, res) => {
+export async function listReports(req: Request, res: Response) {
   try {
-    const { uid } = (req as unknown as AuthenticatedRequest).user;
+    const uid = getUserId(req);
     logger.info('reports.list.requested', { requestId: req.requestId, userId: uid });
     const reports = await getAllReports(uid);
     res.json({ success: true, reports });
@@ -413,12 +350,11 @@ app.get('/api/reports', async (req, res) => {
     });
     res.status(500).json({ success: false, error: 'Failed to fetch reports' });
   }
-});
+}
 
-// Get a specific report by ID
-app.get('/api/reports/:id', async (req, res) => {
+export async function getReport(req: Request, res: Response) {
   try {
-    const { uid } = (req as unknown as AuthenticatedRequest).user;
+    const uid = getUserId(req);
     logger.info('report.fetch.requested', { requestId: req.requestId, userId: uid, reportId: req.params.id });
     const report = await getReportById(uid, req.params.id);
     if (!report) {
@@ -434,12 +370,11 @@ app.get('/api/reports/:id', async (req, res) => {
     });
     res.status(500).json({ success: false, error: 'Failed to fetch report' });
   }
-});
+}
 
-// Get one uploaded report file for preview/download
-app.get('/api/reports/:id/files/:fileIndex', async (req, res) => {
+export async function getReportUploadedFile(req: Request, res: Response) {
   try {
-    const { uid } = (req as unknown as AuthenticatedRequest).user;
+    const uid = getUserId(req);
     const fileIndex = Number(req.params.fileIndex);
     logger.info('report_file.fetch.requested', {
       requestId: req.requestId,
@@ -490,12 +425,11 @@ app.get('/api/reports/:id/files/:fileIndex', async (req, res) => {
     });
     res.status(500).json({ success: false, error: 'Failed to fetch uploaded file' });
   }
-});
+}
 
-// Delete a report by ID
-app.delete('/api/reports/:id', async (req, res) => {
+export async function removeReport(req: Request, res: Response) {
   try {
-    const { uid } = (req as unknown as AuthenticatedRequest).user;
+    const uid = getUserId(req);
     logger.info('report.delete.requested', {
       requestId: req.requestId,
       userId: uid,
@@ -520,30 +454,4 @@ app.delete('/api/reports/:id', async (req, res) => {
     });
     res.status(500).json({ success: false, error: 'Failed to delete report' });
   }
-});
-
-// Health check
-app.get('/api/health', (req, res) => {
-  logger.debug('health.checked', { requestId: req.requestId });
-  res.json({ status: 'ok', message: 'Server is running' });
-});
-
-// Initialize Firebase and start server
-async function start() {
-  await initializeDatabase();
-  app.listen(PORT, () => {
-    logger.info('server.started', {
-      port: PORT,
-      allowedOrigins: Array.from(allowedOrigins),
-      rateLimitWindowMs: RATE_LIMIT_WINDOW_MS,
-      rateLimitMax: RATE_LIMIT_MAX,
-    });
-  });
 }
-
-start().catch((err) => {
-  logger.error('server.start_failed', { error: err });
-  process.exit(1);
-});
-
-export default app;

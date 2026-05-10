@@ -1,4 +1,4 @@
-import './env.js';
+import '../config/env.js';
 import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
 
