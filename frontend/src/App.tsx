@@ -85,14 +85,6 @@ export default function App() {
 
   const isUploadRoute = location.pathname === "/";
   const showNewAnalysis = location.pathname === "/result" || location.pathname.startsWith("/reports");
-  const isReportsRoute = location.pathname.startsWith("/reports");
-  const navTabClass = (active: boolean) =>
-    [
-      "relative min-h-9 px-2 pb-1 transition-colors after:absolute after:left-2 after:right-2 after:bottom-0 after:h-0.5 after:rounded-full after:transition-all",
-      active
-        ? "text-primary-600 after:bg-primary-400 after:opacity-100"
-      : "text-cocoa hover:text-primary-400 after:bg-transparent after:opacity-0",
-    ].join(" ");
 
   useEffect(() => {
     return onAuthStateChanged(auth, (nextUser) => {
@@ -392,19 +384,13 @@ export default function App() {
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden text-ink font-sans selection:bg-accent-100 selection:text-accent-900">
       <header className="border-b border-primary-100 bg-white/90 backdrop-blur sticky top-0 z-50">
-        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-5 lg:px-6">
+        <div className="flex min-h-16 w-full items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-5 lg:px-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-400 text-primary-50 shadow-sm shadow-primary-100">
               <Activity size={22} />
             </div>
             <h1 className="truncate text-base font-extrabold tracking-tight text-ink sm:text-xl">CliniLoom</h1>
           </motion.div>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-bold">
-            <button type="button" onClick={() => navigate("/")} className={navTabClass(!isReportsRoute)}>Dashboard</button>
-            <button type="button" onClick={() => loadReports()} className={navTabClass(isReportsRoute)}>Reports</button>
-            <button type="button" className={navTabClass(false)}>Resources</button>
-          </nav>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <AnimatePresence mode="popLayout">
@@ -415,7 +401,7 @@ export default function App() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   onClick={() => loadReports()}
                   disabled={historyLoading}
-                  className="flex h-10 items-center gap-2 rounded-lg border border-primary-100 bg-white px-3 text-sm font-extrabold text-primary-600 shadow-sm transition-all hover:bg-primary-50 disabled:opacity-50 sm:px-4"
+                  className="flex h-9 items-center gap-1.5 rounded-md border border-primary-100 bg-white px-2.5 text-[13px] font-bold leading-none text-primary-600 shadow-xs transition-colors hover:bg-primary-50 disabled:opacity-50 sm:px-3"
                 >
                   {historyLoading ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
                   <span className="hidden sm:inline">Saved Reports</span>
@@ -427,7 +413,7 @@ export default function App() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   onClick={reset}
-                  className="flex h-10 items-center gap-2 rounded-lg border border-primary-100 bg-white px-3 text-sm font-extrabold text-primary-600 shadow-sm transition-all hover:bg-primary-50 sm:px-4"
+                  className="flex h-9 items-center gap-1.5 rounded-md border border-primary-100 bg-white px-2.5 text-[13px] font-bold leading-none text-primary-600 shadow-xs transition-colors hover:bg-primary-50 sm:px-3"
                 >
                   <RefreshCcw size={14} />
                   <span className="hidden sm:inline">New Analysis</span>
@@ -437,24 +423,21 @@ export default function App() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-primary-100 bg-white px-1.5 py-1.5 text-sm font-bold text-ink shadow-sm transition-colors hover:bg-primary-50 sm:gap-2 sm:px-2"
+              className="group inline-flex h-10 items-center gap-1.5 rounded-full px-1 text-sm font-bold text-ink transition-colors hover:bg-primary-50 sm:gap-2"
               title="Sign out"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-400 text-xs font-black text-primary-50 shadow-sm shadow-primary-100">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-400 text-xs font-black text-primary-50 shadow-sm shadow-primary-100">
                 {getUserInitials(user)}
               </span>
-              <LogOut size={15} className="text-cocoa" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-full text-cocoa transition-colors group-hover:bg-white group-hover:text-primary-600">
+                <LogOut size={15} />
+              </span>
             </button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl items-center justify-between border-t border-primary-100/70 px-3 py-1.5 text-xs font-extrabold sm:px-5 md:hidden">
-          <button type="button" onClick={() => navigate("/")} className={navTabClass(!isReportsRoute)}>Dashboard</button>
-          <button type="button" onClick={() => loadReports()} className={navTabClass(isReportsRoute)}>Reports</button>
-          <button type="button" className={navTabClass(false)}>Resources</button>
-        </nav>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
+      <main className="relative z-10 w-full flex-1 px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/auth" element={<Navigate to="/" replace />} />
@@ -530,7 +513,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 border-t border-primary-100/70 px-3 py-5 text-center text-xs font-semibold text-clay sm:flex-row sm:px-5 sm:text-left lg:px-6">
+      <footer className="relative z-10 flex w-full flex-col items-center justify-between gap-4 border-t border-primary-100/70 px-3 py-5 text-center text-xs font-semibold text-clay sm:flex-row sm:px-5 sm:text-left lg:px-6">
         <p>© 2026 CliniLoom. All rights reserved.</p>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:justify-end">
           <button type="button" className="hover:text-primary-400 transition-colors">Privacy Policy</button>
